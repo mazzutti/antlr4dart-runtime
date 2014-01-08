@@ -114,11 +114,6 @@ main() {
 }
 ```
 
-## REPORTING BUGS
-
-Please submit bug reports to <br>
-[https://github.com/tiagomazzutti/antlr4dart-runtime/issues/new](https://github.com/tiagomazzutti/antlr4dart-runtime/issues/new) 
-
 ## LICENSE
 
 This license applies to all parts of antlr4dart-runtime that are not 
