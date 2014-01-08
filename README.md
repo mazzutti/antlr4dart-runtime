@@ -59,14 +59,14 @@ $> java org.antlr.v4.Tool [OPTIONS] $grammar
 ```
 
    NOTES: 
-   * Probably you will need to edit the `@header{}` section in your grammar. 
-   * Replace *VERSION* with the version number currently used in [ANTLR4](https://github.com/tiagomazzutti/antlr4dart), or your own build of ANLTR4.
+   * Replace *VERSION* with the version number currently used in [ANTLR4](https://github.com/tiagomazzutti/antlr4dart), or your own build of ANLTR4;
+   * Probably you will need to edit the `@header{}` section in your grammar:
    
    Use 
 ```antlr
 @header {
   library your_library_name;
-  import "package:antlr4dart/antlr4dart.dart";
+  import 'package:antlr4dart/antlr4dart.dart';
 }
 ```
    if the code should be generated in a dedicated Dart library. 
@@ -86,15 +86,15 @@ $> java org.antlr.v4.Tool [OPTIONS] $grammar
 
    `antlr4dart` is hosted on pub.dartlang.org, the most simple dependency statement is therefore
 ```yaml
-dependencies:
-  antlr4dart: any
+  dependencies:
+    antlr4dart: any
 ```
    
-   Alternatively, you can add a dependency to dartlr's GitHub repository: 
+   Alternatively, you can add a dependency to antlr4dart's GitHub repository: 
 ```yaml
-dependencies:
-  antlr4dart: 
-    git: git@github.com:tiagomazzutti/antlr4dart.git 
+  dependencies:
+    antlr4dart: 
+      git: git@github.com:tiagomazzutti/antlr4dart.git 
 ```
 
 4. Try out the results directly:
@@ -105,8 +105,9 @@ import "SomeLanguageLexer.dart";
 import "SomeLanguageParser.dart";
 
 main() {
-
-  var lexer = new SomeLanguageLexer(charSource);
+  var input = 'some text to be parsed...';
+  var source = new StringSource(input);
+  var lexer = new SomeLanguageLexer(source);
   var tokens = new CommonTokenSource(lexer);
   var parser = new SomeLanguageParser(tokens);
 
