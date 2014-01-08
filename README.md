@@ -17,7 +17,7 @@ ANTLR language target, a developer may supply a set of templates written in the
 StringTemplate ([http://www.stringtemplate.org](http://www.stringtemplate.org)) language.
 
 This dart lib is a complete implementation of the majority of features
-ANTLR provides for other language targets, such as Java and Python. It contains
+ANTLR provides for other language targets, such as Java and CSharp. It contains
 a dart runtime library that collects classes used throughout the code that
 the modified ANTLR4 ([https://github.com/tiagomazzutti/antlr4dart](https://github.com/tiagomazzutti/antlr4dart)) 
 generates.
@@ -58,7 +58,9 @@ $> export CLASSPATH=path/to/path/to/antlr-<VERSION>-complete.jar:$CLASSPATH
 $> java org.antlr.v4.Tool [OPTIONS] $grammar
 ```
 
-   NOTES: Probably you will need to edit the `@header{}` section in your grammar. 
+   NOTES: 
+   * Probably you will need to edit the `@header{}` section in your grammar. 
+   * Replace *VERSION* with the version number currently used in [ANTLR4](https://github.com/tiagomazzutti/antlr4dart), or your own build of ANLTR4.
    
    Use 
 ```antlr
@@ -67,7 +69,7 @@ $> java org.antlr.v4.Tool [OPTIONS] $grammar
   import "package:antlr4dart/antlr4dart.dart";
 }
 ```
-   if the parser and lexer should be generated in a dedicated Dart library. 
+   if the code should be generated in a dedicated Dart library. 
 
    Use 
 ```antlr
@@ -76,7 +78,7 @@ $> java org.antlr.v4.Tool [OPTIONS] $grammar
   // no import statement here, add it to the parent library file 
 }
 ```
-   if the  parser and lexer should be generated as part of another library.
+   if the  code should be generated as part of another library.
 
    More samples can be found in the test folder.
 
