@@ -1,6 +1,6 @@
 **ANTLR 4 runtime for Dart**
 
-## DESCRIPTION
+### DESCRIPTION
 
 Fully-featured ANTLR 4 runtime library for Dart.
 
@@ -22,9 +22,9 @@ a dart runtime library that collects classes used throughout the code that
 the modified ANTLR4 ([https://github.com/tiagomazzutti/antlr4dart](https://github.com/tiagomazzutti/antlr4dart)) 
 generates.
 
-## USAGE
+### USAGE
 
-1. Write an ANTLR4 grammar specification for a language
+1. Write an ANTLR4 grammar specification for a language:
 
 ```antlr
 grammar SomeLanguage;
@@ -39,8 +39,7 @@ top: expr ( ',' expr )*
 // and so on...
 ```
 
-2. Run the [ANTLR4](https://github.com/tiagomazzutti/antlr4dart) tool with the `java -jar path/to/antlr-<VERSION>-complete.jar.jar` command to 
-   generate output:
+2. Run the [ANTLR4](https://github.com/tiagomazzutti/antlr4dart) tool with the `java -jar path/to/antlr-<VERSION>-complete.jar.jar` command to generate output:
 
 ```bash
 $> java -jar path/to/antlr-<VERSION>-complete.jar.jar [OPTIONS] lang.g
@@ -82,7 +81,7 @@ $> java org.antlr.v4.Tool [OPTIONS] $grammar
 
    More samples can be found in the test folder.
 
-3. Make sure your `pubspec.yaml` includes a dependency to `antlr4dart`
+3. Make sure your `pubspec.yaml` includes a dependency to `antlr4dart`:
 
    `antlr4dart` is hosted on pub.dartlang.org, the most simple dependency statement is therefore
 ```yaml
@@ -117,7 +116,7 @@ main() {
 }
 ```
 
-## LICENSE
+### LICENSE
 
 This license applies to all parts of antlr4dart-runtime that are not 
 externally maintained libraries. 
