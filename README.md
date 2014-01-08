@@ -4,23 +4,23 @@
 
 Fully-featured ANTLR 4 runtime library for Dart.
 
-ANTLR (ANother Tool for Language Recognition) is a tool that is used to generate
-code for performing a variety of language recognition tasks: lexing, parsing,
-abstract syntax tree construction and manipulation, tree structure recognition,
-and input translation. The tool operates similarly to other parser generators,
-taking in a grammar specification written in the special ANTLR metalanguage and
-producing source code that implements the recognition functionality.
+ANTLR (ANother Tool for Language Recognition) is a tool that is used to 
+generate code for performing a variety of language recognition tasks: 
+lexing, parsing, abstract syntax tree construction and manipulation, tree 
+structure recognition, and input translation. The tool operates similarly 
+to other parser generators, taking in a grammar specification written in 
+the special ANTLR metalanguage and producing source code that implements 
+the recognition functionality.
 
-While the tool itself is implemented in Java, it has an extensible design that
-allows for code generation in other programming languages. To implement an
-ANTLR language target, a developer may supply a set of templates written in the
-StringTemplate ([http://www.stringtemplate.org](http://www.stringtemplate.org)) language.
+While the tool itself is implemented in Java, it has an extensible design 
+that allows for code generation in other programming languages. To implement 
+an ANTLR language target, a developer may supply a set of templates written 
+in the StringTemplate ([http://www.stringtemplate.org](http://www.stringtemplate.org)) language.
 
 This dart lib is a complete implementation of the majority of features
-ANTLR provides for other language targets, such as Java and CSharp. It contains
-a dart runtime library that collects classes used throughout the code that
-the modified ANTLR4 ([https://github.com/tiagomazzutti/antlr4dart](https://github.com/tiagomazzutti/antlr4dart)) 
-generates.
+ANTLR provides for other language targets, such as Java and CSharp. It 
+contains a dart runtime library that collects classes used throughout the 
+code that the modified ANTLR4 ([https://github.com/tiagomazzutti/antlr4dart](https://github.com/tiagomazzutti/antlr4dart)) generates.
 
 #### USAGE
 
@@ -83,40 +83,40 @@ generates.
 
 3. Make sure your `pubspec.yaml` includes a dependency to `antlr4dart`:
 
-   `antlr4dart` is hosted on pub.dartlang.org, the most simple dependency statement is therefore
-```yaml
-  dependencies:
-    antlr4dart: any
-```
-   
-   Alternatively, you can add a dependency to antlr4dart's GitHub repository: 
-```yaml
-  dependencies:
-    antlr4dart: 
-      git: git@github.com:tiagomazzutti/antlr4dart.git 
-```
+  `antlr4dart` is hosted on pub.dartlang.org, the most simple dependency statement is therefore:
+  ```yaml
+    dependencies:
+      antlr4dart: any
+  ```
+     
+     Alternatively, you can add a dependency to antlr4dart's GitHub repository: 
+  ```yaml
+    dependencies:
+      antlr4dart: 
+        git: git@github.com:tiagomazzutti/antlr4dart.git 
+  ```
 
 4. Try out the results directly:
 
-```dart
-import "package:antlr4dart/antlr4dart.dart";
-import "SomeLanguageLexer.dart";
-import "SomeLanguageParser.dart";
+  ```dart
+  import "package:antlr4dart/antlr4dart.dart";
+  import "SomeLanguageLexer.dart";
+  import "SomeLanguageParser.dart";
+  
+  main() {
+    var input = 'some text to be parsed...';
+    var source = new StringSource(input);
+    var lexer = new SomeLanguageLexer(source);
+    var tokens = new CommonTokenSource(lexer);
+    var parser = new SomeLanguageParser(tokens);
+  
+    var result = parser.<entry_rule>();    
+    // ...
+  
+  }
+  ```
 
-main() {
-  var input = 'some text to be parsed...';
-  var source = new StringSource(input);
-  var lexer = new SomeLanguageLexer(source);
-  var tokens = new CommonTokenSource(lexer);
-  var parser = new SomeLanguageParser(tokens);
-
-  var result = parser.<entry_rule>();    
-  // ...
-
-}
-```
-
-### LICENSE
+#### LICENSE
 
 This license applies to all parts of antlr4dart-runtime that are not 
 externally maintained libraries. 
