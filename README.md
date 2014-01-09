@@ -1,6 +1,6 @@
 **ANTLR 4 runtime for Dart**
 
-#### DESCRIPTION
+#### Description
 
 Fully-featured ANTLR 4 runtime library for Dart.
 
@@ -22,7 +22,7 @@ ANTLR provides for other language targets, such as Java and CSharp. It
 contains a dart runtime library that collects classes used throughout the 
 code that the modified ANTLR4 ([https://github.com/tiagomazzutti/antlr4dart](https://github.com/tiagomazzutti/antlr4dart)) generates.
 
-#### USAGE
+#### Usage
 
 1. Write an ANTLR4 grammar specification for a language:
 
@@ -39,10 +39,10 @@ code that the modified ANTLR4 ([https://github.com/tiagomazzutti/antlr4dart](htt
   // and so on...
   ```
 
-2. Run the [ANTLR4](https://github.com/tiagomazzutti/antlr4dart) tool with the `java -jar path/to/antlr-<VERSION>-complete.jar.jar` command to generate output:
+2. Run the [ANTLR4](https://github.com/tiagomazzutti/antlr4dart) tool with the `java -jar path/to/antlr-<VERSION>-with-dart-support.jar` command to generate output:
 
   ```bash
-  $> java -jar path/to/antlr-<VERSION>-complete.jar.jar [OPTIONS] lang.g
+  $> java -jar path/to/antlr-{VERSION}-with-dart-support.jar [OPTIONS] lang.g
   # creates:
   #   langParser.dart
   #   langLexer.dart
@@ -52,7 +52,7 @@ code that the modified ANTLR4 ([https://github.com/tiagomazzutti/antlr4dart](htt
    alternatively, you can do:
 
   ```bash 
-  $> export CLASSPATH=path/to/path/to/antlr-<VERSION>-complete.jar:$CLASSPATH
+  $> export CLASSPATH=path/to/path/to/antlr-{VERSION}-with-dart-support.jar:$CLASSPATH
   
   $> java org.antlr.v4.Tool [OPTIONS] $grammar
   ```
@@ -93,7 +93,7 @@ code that the modified ANTLR4 ([https://github.com/tiagomazzutti/antlr4dart](htt
   ```yaml
     dependencies:
       antlr4dart: 
-        git: git@github.com:tiagomazzutti/antlr4dart.git 
+        git: git@github.com:tiagomazzutti/antlr4dart-runtime.git 
   ```
 
 4. Try out the results directly:
