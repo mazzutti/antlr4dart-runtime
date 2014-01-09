@@ -26,7 +26,7 @@ code that the modified ANTLR4 ([https://github.com/tiagomazzutti/antlr4dart](htt
 
 1. Write an ANTLR4 grammar specification for a language:
 
-  ```antlr
+  ```
   grammar SomeLanguage;
   
   options {
@@ -41,7 +41,7 @@ code that the modified ANTLR4 ([https://github.com/tiagomazzutti/antlr4dart](htt
 
 2. Run the [ANTLR4](https://github.com/tiagomazzutti/antlr4dart) tool with the `java -jar path/to/antlr-<VERSION>-with-dart-support.jar` command to generate output:
 
-  ```bash
+  ```
   $> java -jar path/to/antlr-{VERSION}-with-dart-support.jar [OPTIONS] lang.g
   # creates:
   #   langParser.dart
@@ -51,7 +51,7 @@ code that the modified ANTLR4 ([https://github.com/tiagomazzutti/antlr4dart](htt
 
    alternatively, you can do:
 
-  ```bash 
+  ``` 
   $> export CLASSPATH=path/to/path/to/antlr-{VERSION}-with-dart-support.jar:$CLASSPATH
   
   $> java org.antlr.v4.Tool [OPTIONS] $grammar
@@ -61,57 +61,57 @@ code that the modified ANTLR4 ([https://github.com/tiagomazzutti/antlr4dart](htt
    * Replace *VERSION* with the version number currently used in [ANTLR4](https://github.com/tiagomazzutti/antlr4dart), or your own build of ANLTR4;
    * Probably you will need to edit the `@header{}` section in your grammar:
    
-       Use 
-        ```antlr
-        @header {
-          library your_library_name;
-          import 'package:antlr4dart/antlr4dart.dart';
-        }
-        ```
-       if the code should be generated in a dedicated Dart library. 
+    Use 
+      ```
+      @header {
+        library your_library_name;
+        import 'package:antlr4dart/antlr4dart.dart';
+      }
+      ```
+      if the code should be generated in a dedicated Dart library. 
     
-       Use 
-        ```antlr
-        @header {
-          part of your_library_name;
-          // no import statement here, add it to the parent library file 
-        }
-        ```
-       if the  code should be generated as part of another library. 
+    Use 
+      ```
+      @header {
+        part of your_library_name;
+        // no import statement here, add it to the parent library file 
+      }
+      ```
+      if the  code should be generated as part of another library. 
 
-       *More samples can be found in the [antlr4dart](https://github.com/tiagomazzutti/antlr4dart) test folder.*
+      *More samples can be found in the [antlr4dart](https://github.com/tiagomazzutti/antlr4dart) test folder.*
 
 3. Make sure your `pubspec.yaml` includes a dependency to `antlr4dart`:
 
-  `antlr4dart` is hosted on pub.dartlang.org, the most simple dependency statement is therefore:
-  ```yaml
-    dependencies:
-      antlr4dart: any
-  ```
-     
-     Alternatively, you can add a dependency to antlr4dart's GitHub repository: 
-  ```yaml
-    dependencies:
-      antlr4dart: 
-        git: git@github.com:tiagomazzutti/antlr4dart-runtime.git 
-  ```
+`antlr4dart` is hosted on pub.dartlang.org, the most simple dependency statement is therefore:
+```
+dependencies:
+  antlr4dart: any
+```
+   
+   Alternatively, you can add a dependency to antlr4dart's GitHub repository: 
+```
+dependencies:
+  antlr4dart: 
+    git: git@github.com:tiagomazzutti/antlr4dart-runtime.git 
+```
 
 4. Try out the results directly:
 
-  ```dart
-  import "package:antlr4dart/antlr4dart.dart";
-  import "SomeLanguageLexer.dart";
-  import "SomeLanguageParser.dart";
-  
-  main() {
-    var input = 'some text to be parsed...';
-    var source = new StringSource(input);
-    var lexer = new SomeLanguageLexer(source);
-    var tokens = new CommonTokenSource(lexer);
-    var parser = new SomeLanguageParser(tokens);
-  
-    var result = parser.<entry_rule>();    
-    // ...
-  
-  }
-  ```
+```
+import "package:antlr4dart/antlr4dart.dart";
+import "SomeLanguageLexer.dart";
+import "SomeLanguageParser.dart";
+
+main() {
+  var input = 'some text to be parsed...';
+  var source = new StringSource(input);
+  var lexer = new SomeLanguageLexer(source);
+  var tokens = new CommonTokenSource(lexer);
+  var parser = new SomeLanguageParser(tokens);
+
+  var result = parser.<entry_rule>();    
+  // ...
+
+}
+```
