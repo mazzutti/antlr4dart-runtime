@@ -112,6 +112,5 @@ main() {
 
   var result = parser.<entry_rule>();    
   // ...
-
 }
 ```
