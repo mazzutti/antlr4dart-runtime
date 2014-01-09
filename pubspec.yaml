@@ -5,5 +5,3 @@ homepage: https://github.com/tiagomazzutti/antlr4dart-runtime.git
 description: ANTLR4 runtime library for Dart.
 dependencies:
   fixnum: any
-  logging: '>=0.3.1+1 <0.3.2'
-  unittest: any
