@@ -8,8 +8,8 @@ part of antlr4dart;
  * prediction.
  */
 class FailedPredicateException extends RecognitionException {
-  final int ruleIndex;
-  final int predicateIndex;
+  int _ruleIndex;
+  int _predicateIndex;
   final String predicate;
 
   FailedPredicateException(Parser recognizer,
@@ -19,14 +19,21 @@ class FailedPredicateException extends RecognitionException {
                           recognizer,
                           recognizer.inputSource,
                           recognizer.context),
-      ruleIndex = (recognizer.interpreter.atn.states[
-          recognizer.state].transition(0) as PredicateTransition).ruleIndex,
-      predicateIndex = (recognizer.interpreter.atn.states[
-          recognizer.state].transition(0) as PredicateTransition).predIndex,
       predicate = predicate {
+    AtnState s = recognizer.interpreter.atn.states[recognizer.state];
+    AbstractPredicateTransition trans = s.transition(0);
+    if (trans is PredicateTransition) {
+      _ruleIndex = trans.ruleIndex;
+      _predicateIndex = trans.predIndex;
+    } else {
+      _ruleIndex = 0;
+      _predicateIndex = 0;
+    }
     _offendingToken = recognizer.currentToken;
   }
 
+  int get ruleIndex => _ruleIndex;
+  int get predicateIndex => _predicateIndex;
 
   static String _formatMessage(String predicate, String message) {
     if (message != null) return message;

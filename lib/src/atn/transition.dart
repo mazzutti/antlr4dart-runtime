@@ -24,6 +24,7 @@ abstract class Transition {
   static const int SET = 7; // ~(A|B) or ~atom, wildcard, which convert to next 2
   static const int NOT_SET = 8;
   static const int WILDCARD = 9;
+  static const int PRECEDENCE = 10;
 
 
   static const List<String> serializationNames =
@@ -37,7 +38,8 @@ abstract class Transition {
       "ACTION",
       "SET",
       "NOT_SET",
-      "WILDCARD"
+      "WILDCARD",
+      "PRECEDENCE"
     ];
 
   static const Map<Type, int> serializationTypes =
@@ -50,7 +52,8 @@ abstract class Transition {
       ActionTransition: ACTION,
       SetTransition: SET,
       NotSetTransition: NOT_SET,
-      WildcardTransition: WILDCARD
+      WildcardTransition: WILDCARD,
+      PrecedencePredicateTransition: PRECEDENCE
     };
 
   /**

@@ -4,7 +4,15 @@ abstract class AtnSimulator {
 
   static const int SERIALIZED_VERSION = 3;
 
-  static const String SERIALIZED_UUID = "33761B2D-78BB-4A43-8B0B-4F5BEE8AACF3";
+  static const String SERIALIZED_UUID = "1DA0C57D-6C06-438A-9B27-10BCB3CE0F61";
+  
+  static const String _BASE_SERIALIZED_UUID = "33761B2D-78BB-4A43-8B0B-4F5BEE8AACF3";
+  static const String _ADDED_PRECEDENCE_TRANSITIONS = "1DA0C57D-6C06-438A-9B27-10BCB3CE0F61";
+  
+  static const List<String> _SUPPORTED_UUIDS = const <String>[
+    _BASE_SERIALIZED_UUID, 
+    _ADDED_PRECEDENCE_TRANSITIONS
+  ];
 
   /**
    * Must distinguish between missing edge and edge we know leads nowhere
@@ -47,18 +55,25 @@ abstract class AtnSimulator {
     while (iterator.moveNext()) codes.add(iterator.current - 2);
     int p = 0;
     int version = codes[p++] + 2;
+   
     if (version != SERIALIZED_VERSION) {
       throw new UnsupportedError(
           "Could not deserialize ATN with version $version (expected $SERIALIZED_VERSION).");
     }
     String uuid = toUuid(codes.getRange(p, p += 8).toList());
+    
     if (uuid != SERIALIZED_UUID) {
       throw new UnsupportedError(
           "Could not deserialize ATN with UUID $uuid (expected $SERIALIZED_UUID).");
     }
+    
+    bool supportsPrecedencePredicates = _isFeatureSupported(_ADDED_PRECEDENCE_TRANSITIONS, uuid);
+    
     AtnType grammarType = AtnType.values[codes[p++]];
     int maxTokenType = codes[p++];
+    
     Atn atn = new Atn(grammarType, maxTokenType);
+    
     // STATES
     var loopBackStateNumbers = new List<Pair<LoopEndState, int>>();
     var endStateNumbers = new List<Pair<BlockStartState, int>>();
@@ -82,6 +97,7 @@ abstract class AtnSimulator {
       }
       atn.addState(s);
     }
+    
     // delay the assignment of loop back and end states until we
     // know all the state instances have been initialized
     for (Pair<LoopEndState, int> pair in loopBackStateNumbers) {
@@ -95,6 +111,15 @@ abstract class AtnSimulator {
       int stateNumber = codes[p++] ;
       (atn.states[stateNumber] as DecisionState).nonGreedy = true;
     }
+    
+    if (supportsPrecedencePredicates) {
+      int numPrecedenceStates = codes[p++];
+      for (int i = 0; i < numPrecedenceStates; i++) {
+        int stateNumber = codes[p++];
+        (atn.states[stateNumber] as RuleStartState).isPrecedenceRule = true;
+      }
+    }
+    
     // RULES
     int nrules = codes[p++];
     if (atn.grammarType == AtnType.LEXER) {
@@ -282,6 +307,8 @@ abstract class AtnSimulator {
         return new RuleTransition(atn.states[arg1], arg2, target);
       case Transition.PREDICATE :
         return new PredicateTransition(target, arg1, arg2, arg3 != 0);
+      case Transition.PRECEDENCE:
+        return new PrecedencePredicateTransition(target, arg1);
       case Transition.ATOM :
         if (arg3 != 0) return new AtomTransition(target, Token.EOF);
         return new AtomTransition(target, arg1);
@@ -315,5 +342,24 @@ abstract class AtnSimulator {
     }
     s.ruleIndex = ruleIndex;
     return s;
+  }
+  
+  // Determines if a particular serialized representation of an ATN supports
+  // a particular feature, identified by the uuid used for serializing
+  // the ATN at the time the feature was first introduced.
+  // 
+  // feature is the uuid marking the first time the feature was
+  // supported in the serialized ATN.
+  // actualUuid is the uuid of the actual serialized ATN which is
+  // currently being deserialized.
+  // Return true if the actualUuid value represents a serialized ATN 
+  // at or after the feature identified by feature was introduced; 
+  // otherwise, false.
+  static bool _isFeatureSupported(String feature, String actualUuid) {
+    int featureIndex = _SUPPORTED_UUIDS.indexOf(feature);
+    if (featureIndex < 0) {
+      return false;
+    }
+    return _SUPPORTED_UUIDS.indexOf(actualUuid) >= featureIndex;
   }
 }

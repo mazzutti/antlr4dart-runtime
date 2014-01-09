@@ -930,6 +930,8 @@ class ParserAtnSimulator extends AtnSimulator {
     switch (t.serializationType) {
       case Transition.RULE:
         return _ruleTransition(config, t);
+      case Transition.PRECEDENCE:
+        return _precedenceTransition(config, t, collectPredicates, inContext, fullCtx);
       case Transition.PREDICATE:
         return _predTransition(config, t, collectPredicates, inContext, fullCtx);
       case Transition.ACTION:
@@ -938,6 +940,42 @@ class ParserAtnSimulator extends AtnSimulator {
         return new AtnConfig.from(config, state:t.target);
       default: return null;
     }
+  }
+  
+  AtnConfig _precedenceTransition(AtnConfig config,
+                                  PrecedencePredicateTransition pt,
+                                  bool collectPredicates,
+                                  bool inContext,
+                                  bool fullCtx) {
+    if (_debug) {
+      print("PRED (collectPredicates=$collectPredicates) ${pt.precedence}>=_p, ctx dependent=true");
+      if (_parser != null) {
+        print("context surrounding pred is ${_parser.ruleInvocationStack}");
+      }
+    }
+    AtnConfig c = null;
+    if (collectPredicates && inContext) {
+      if (fullCtx) {
+        // In full context mode, we can evaluate predicates on-the-fly
+        // during closure, which dramatically reduces the size of
+        // the config sets. It also obviates the need to test predicates
+        // later during conflict resolution.
+        int currentPosition = _input.index;
+        _input.seek(_startIndex);
+        bool predSucceeds = pt.predicate.eval(_parser, _outerContext);
+        _input.seek(currentPosition);
+        if ( predSucceeds ) {
+          c = new AtnConfig.from(config, state:pt.target); // no pred context
+        }
+      } else {
+        SemanticContext newSemCtx = SemanticContext.and(config.semanticContext, pt.predicate);
+        c = new AtnConfig.from(config, state:pt.target, semanticContext:newSemCtx);
+      }
+    } else {
+      c = new AtnConfig.from(config, state:pt.target);
+    }
+    if (_debug) print("config from pred transition=$c");
+    return c;
   }
 
   AtnConfig _actionTransition(AtnConfig config, ActionTransition t) {

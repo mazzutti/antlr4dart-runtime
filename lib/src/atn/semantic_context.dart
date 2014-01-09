@@ -49,6 +49,35 @@ abstract class SemanticContext {
     }
     return result;
   }
+  
+  static List<PrecedencePredicate> _filterPrecedencePredicates(Set<SemanticContext> iterable) {
+    List<PrecedencePredicate> result = null;
+    List<SemanticContext> copy = new List<SemanticContext>.from(iterable);
+    for (Iterator<SemanticContext> iterator = copy.iterator; iterator.moveNext();) {
+      SemanticContext context = iterator.current;
+      if (context is PrecedencePredicate) {
+        if (result == null) {
+          result = new List<PrecedencePredicate>();
+        }
+        result.add(context);
+        iterable.remove(context);
+      }
+    }
+    if (result == null) {
+      return <PrecedencePredicate>[];
+    }
+    return result;
+  }
+  
+  static PrecedencePredicate _min(List<PrecedencePredicate> predicates) {
+    PrecedencePredicate min = predicates[0];
+    for(int i = 1; i < predicates.length; i++) {
+      if (min.compareTo(predicates[i]) > 0) {
+        min = predicates[i];
+      }
+    }
+    return min;
+  }
 }
 
 class Predicate extends SemanticContext {
@@ -96,6 +125,12 @@ class And extends SemanticContext {
     else opnds.add(a);
     if (b is And) operands.addAll(b.opnds);
     else operands.add(b);
+    var precedencePredicates = SemanticContext._filterPrecedencePredicates(operands);
+    if (!precedencePredicates.isEmpty) {
+      // interested in the transition with the lowest precedence
+      var reduced = SemanticContext._min(precedencePredicates);
+      operands.add(reduced);
+    }
     opnds.addAll(operands);
   }
 
@@ -115,7 +150,8 @@ class And extends SemanticContext {
     return true;
   }
 
-  String toString() => opnds.join('&&');
+  String toString() => opnds.join('&&'); 
+ 
 }
 
 class Or extends SemanticContext {
@@ -149,4 +185,32 @@ class Or extends SemanticContext {
   }
 
   String toString() => opnds.join("||");
+}
+
+class PrecedencePredicate extends SemanticContext implements Comparable<PrecedencePredicate> {
+  final int precedence;
+
+  PrecedencePredicate([this.precedence = 0]);
+
+  bool eval(Recognizer parser, RuleContext outerContext) {
+    return parser.precpred(outerContext, precedence);
+  }
+
+  int compareTo(PrecedencePredicate o) {
+    return precedence - o.precedence;
+  }
+
+  int get hashCode {
+    int hash = 1;
+    hash = 31 * hash + precedence;
+    return hash;
+  }
+
+  bool operator==(Object obj) {
+    if (obj is PrecedencePredicate) 
+      return precedence == obj.precedence;
+    return false;
+  }
+
+  String toString() => super.toString();
 }

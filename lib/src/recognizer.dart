@@ -105,6 +105,10 @@ abstract class Recognizer<T, AtnInterpreter extends AtnSimulator> {
   bool sempred(RuleContext _localctx, int ruleIndex, int actionIndex) {
     return true;
   }
+  
+  bool precpred(RuleContext localctx, int precedence) {
+    return true;
+  }
 
   void action(RuleContext _localctx, int ruleIndex, int actionIndex) {}
 }

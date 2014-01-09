@@ -193,9 +193,11 @@ class LexerAtnSimulator extends AtnSimulator {
     // Fill reach starting from closure, following t transitions
     _getReachableConfigSet(input, s.configs, reach, t);
     if (reach.isEmpty) { // we got nowhere on t from s
-      // we got nowhere on t, don't throw out this knowledge; it'd
-      // cause a failover from DFA later.
-      __addDfaEdge(s, t, AtnSimulator.ERROR);
+      if (!reach.hasSemanticContext) {
+       // we got nowhere on t, don't throw out this knowledge; it'd
+        // cause a failover from DFA later.
+        __addDfaEdge(s, t, AtnSimulator.ERROR);
+      }
       // stop when we can't match any more char
       return AtnSimulator.ERROR;
     }
@@ -351,7 +353,8 @@ class LexerAtnSimulator extends AtnSimulator {
             config.context, (t as RuleTransition).followState.stateNumber);
         c = new LexerAtnConfig.from(config, t.target, context:newContext);
         break;
-
+      case Transition.PRECEDENCE:
+        throw new UnsupportedError("Precedence predicates are not supported in lexers.");
       case Transition.PREDICATE:
         // Track traversing semantic predicates. If we traverse,
         // we cannot add a DFA state for this "reach" computation

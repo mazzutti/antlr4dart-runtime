@@ -18,6 +18,8 @@ abstract class Parser extends Recognizer<Token, ParserAtnSimulator> {
   // The number of syntax errors reported during parsing. This value is
   // incremented each time notifyErrorListeners is called.
   int _syntaxErrors;
+  
+  List<int> _precedenceStack;
 
   /*
    * The ParserRuleContext object for the currently executing rule.
@@ -38,6 +40,8 @@ abstract class Parser extends Recognizer<Token, ParserAtnSimulator> {
   bool buildParseTree = true;
 
   Parser(TokenSource input) {
+    _precedenceStack = new List<int>();
+    _precedenceStack.add(0);
     inputSource = input;
   }
 
@@ -50,6 +54,8 @@ abstract class Parser extends Recognizer<Token, ParserAtnSimulator> {
     context = null;
     _syntaxErrors = 0;
     trace = false;
+    _precedenceStack.clear();
+    _precedenceStack.add(0);
     if (interpreter != null) interpreter.reset();
   }
 
@@ -141,6 +147,10 @@ abstract class Parser extends Recognizer<Token, ParserAtnSimulator> {
    */
   bool get trimParseTree {
     return parseListeners.contains(TrimToSizeListener.INSTANCE);
+  }
+  
+  bool precpred(RuleContext localctx, int precedence) {
+    return precedence >= _precedenceStack.last;
   }
 
   List<ParseTreeListener> get parseListeners {
@@ -363,8 +373,10 @@ abstract class Parser extends Recognizer<Token, ParserAtnSimulator> {
     }
     context = localctx;
   }
-
-  void enterRecursionRule(ParserRuleContext localctx, int ruleIndex) {
+  
+  void enterRecursionRule(ParserRuleContext localctx, int state, int ruleIndex, int precedence) {
+    this.state = state;
+    _precedenceStack.add(precedence);
     context = localctx;
     context.start = _input.lookToken(1);
     if (_parseListeners != null) {
@@ -391,6 +403,7 @@ abstract class Parser extends Recognizer<Token, ParserAtnSimulator> {
   }
 
   void unrollRecursionContexts(ParserRuleContext parentctx) {
+    _precedenceStack.removeLast();
     context.stop = _input.lookToken(-1);
     ParserRuleContext retctx = context; // save current ctx (return value)
     // unroll so _ctx is as it was before call to recursive method

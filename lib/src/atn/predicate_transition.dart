@@ -6,7 +6,7 @@ part of antlr4dart;
  *  may have to combine a bunch of them as it collects predicates from
  *  multiple ATN configurations into a single DFA state.
  */
-class PredicateTransition extends Transition {
+class PredicateTransition extends AbstractPredicateTransition {
 
   final int ruleIndex;
   final int predIndex;
@@ -15,7 +15,7 @@ class PredicateTransition extends Transition {
   PredicateTransition(AtnState target,
                       this.ruleIndex,
                       this.predIndex,
-                      this.isCtxDependent) : super._internal(target);
+                      this.isCtxDependent) : super(target);
 
   int get serializationType => Transition.PREDICATE;
 
