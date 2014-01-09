@@ -1,6 +1,6 @@
 name: antlr4dart
 author: Tiago Mazzutti <tiagomzt@gmail.com>
-version: 0.1.0
+version: 0.1.2
 homepage: https://github.com/tiagomazzutti/antlr4dart-runtime.git
 description: ANTLR4 runtime library for Dart.
 dependencies:

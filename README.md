@@ -26,70 +26,75 @@ code that the modified ANTLR4 ([https://github.com/tiagomazzutti/antlr4dart](htt
 
 1. Write an ANTLR4 grammar specification for a language:
 
-  ```
-  grammar SomeLanguage;
+```
+grammar SomeLanguage;
   
-  options {
-    language = Dart;    // <- this option must be set to Dart
-  }
+options {
+  language = Dart;    // <- this option must be set to Dart
+}
   
-  top: expr ( ',' expr )*
-     ;
+top: expr ( ',' expr )*
+   ;
   
-  // and so on...
-  ```
+// and so on...
+```
 
 2. Run the [ANTLR4](https://github.com/tiagomazzutti/antlr4dart) tool with the `java -jar path/to/antlr-<VERSION>-with-dart-support.jar` command to generate output:
 
-  ```
-  $> java -jar path/to/antlr-{VERSION}-with-dart-support.jar [OPTIONS] lang.g
-  # creates:
-  #   langParser.dart
-  #   langLexer.dart
-  #   lang.tokens
-  ```
+```
+$> java -jar path/to/antlr-{VERSION}-with-dart-support.jar [OPTIONS] lang.g
+# creates:
+#   langParser.dart
+#   langLexer.dart
+#   lang.tokens
+```
 
    alternatively, you can do:
 
-  ``` 
-  $> export CLASSPATH=path/to/path/to/antlr-{VERSION}-with-dart-support.jar:$CLASSPATH
+``` 
+$> export CLASSPATH=path/to/path/to/antlr-{VERSION}-with-dart-support.jar:$CLASSPATH
   
-  $> java org.antlr.v4.Tool [OPTIONS] $grammar
-  ```
+$> java org.antlr.v4.Tool [OPTIONS] $grammar
+```
 
-   NOTES: 
-   * Replace *VERSION* with the version number currently used in [ANTLR4](https://github.com/tiagomazzutti/antlr4dart), or your own build of ANLTR4;
-   * Probably you will need to edit the `@header{}` section in your grammar:
+NOTES: 
+
+ * Replace *VERSION* with the version number currently used in [ANTLR4](https://github.com/tiagomazzutti/antlr4dart), or your own build of ANLTR4;
+ 
+ * Probably you will need to edit the `@header{}` section in your grammar:
    
-    Use 
-      ```
-      @header {
-        library your_library_name;
-        import 'package:antlr4dart/antlr4dart.dart';
-      }
-      ```
-      if the code should be generated in a dedicated Dart library. 
-    
-    Use 
-      ```
-      @header {
-        part of your_library_name;
-        // no import statement here, add it to the parent library file 
-      }
-      ```
-      if the  code should be generated as part of another library. 
+ Use 
+```
+  @header {
+    library your_library_name;
+    import 'package:antlr4dart/antlr4dart.dart';
+  }
+```
 
-      *More samples can be found in the [antlr4dart](https://github.com/tiagomazzutti/antlr4dart) test folder.*
+ if the code should be generated in a dedicated Dart library. 
+    
+ Use 
+```
+  @header {
+    part of your_library_name;
+    // no import statement here, add it to the parent library file 
+  }
+```
+
+  if the  code should be generated as part of another library. 
+
+*More samples can be found in the [antlr4dart](https://github.com/tiagomazzutti/antlr4dart) test folder.*
 
 3. Make sure your `pubspec.yaml` includes a dependency to `antlr4dart`:
 
 `antlr4dart` is hosted on pub.dartlang.org, the most simple dependency statement is therefore:
+
 ```
 dependencies:
   antlr4dart: any
 ```
    
-   Alternatively, you can add a dependency to antlr4dart's GitHub repository: 
+Alternatively, you can add a dependency to antlr4dart's GitHub repository: 
 ```
 dependencies:
   antlr4dart: 
