@@ -18,8 +18,12 @@ abstract class Parser extends Recognizer<Token, ParserAtnSimulator> {
   // The number of syntax errors reported during parsing. This value is
   // incremented each time notifyErrorListeners is called.
   int _syntaxErrors;
-  
+
   List<int> _precedenceStack;
+
+  // This field maps from the serialized ATN string to the deserialized
+  // ATN with bypass alternatives.
+  static final Map<String, Atn> _bypassAltsAtnCache = new HashMap<String, Atn>();
 
   /*
    * The ParserRuleContext object for the currently executing rule.
@@ -43,6 +47,65 @@ abstract class Parser extends Recognizer<Token, ParserAtnSimulator> {
     _precedenceStack = new List<int>();
     _precedenceStack.add(0);
     inputSource = input;
+  }
+
+  String get sourceName => _input.sourceName;
+
+  /**
+   * Return the precedence level for the top-most precedence rule, or -1 if
+   * the parser context is not nested within a precedence rule.
+   */
+  int get precedence {
+    if (_precedenceStack.isEmpty) return -1;
+    return _precedenceStack.last;
+  }
+
+  /**
+   * During a parse is sometimes useful to listen in on the rule entry and exit
+   * events as well as token matches. This is for quick and dirty debugging.
+   */
+  void set trace(bool trace) {
+    if (!trace) {
+      removeParseListener(_tracer);
+      _tracer = null;
+    } else {
+      if (_tracer != null) removeParseListener(_tracer);
+      else _tracer = new TraceListener(this);
+      addParseListener(_tracer);
+    }
+  }
+
+  /**
+   * Trim the internal lists of the parse tree during parsing to conserve memory.
+   * This property is set to `false` by default for a newly constructed parser.
+   *
+   * [trimParseTrees] is `true` to trim the capacity of the [ParserRuleContext.children]
+   * list to its size after a rule is parsed.
+   */
+  void set trimParseTree(bool trimParseTrees) {
+    if (trimParseTrees) {
+      if (trimParseTree) return;
+      addParseListener(TrimToSizeListener.INSTANCE);
+    } else {
+      removeParseListener(TrimToSizeListener.INSTANCE);
+    }
+  }
+
+  /**
+   * Return `true` if the [ParserRuleContext.children] list is trimmed
+   * using the default [TrimToSizeListener] during the parse process.
+   */
+  bool get trimParseTree {
+    return parseListeners.contains(TrimToSizeListener.INSTANCE);
+  }
+
+  /**
+   * Get a rule's index (i.e., `RULE_ruleName` field) or -1 if not found.
+   */
+  int getRuleIndex(String ruleName) {
+    int ruleIndex = ruleIndexMap[ruleName];
+    if (ruleIndex != null) return ruleIndex;
+    return -1;
   }
 
   /**
@@ -125,30 +188,6 @@ abstract class Parser extends Recognizer<Token, ParserAtnSimulator> {
     return t;
   }
 
-  /**
-   * Trim the internal lists of the parse tree during parsing to conserve memory.
-   * This property is set to `false` by default for a newly constructed parser.
-   *
-   * [trimParseTrees] is `true` to trim the capacity of the [ParserRuleContext.children]
-   * list to its size after a rule is parsed.
-   */
-  void set trimParseTree(bool trimParseTrees) {
-    if (trimParseTrees) {
-      if (trimParseTree) return;
-      addParseListener(TrimToSizeListener.INSTANCE);
-    } else {
-      removeParseListener(TrimToSizeListener.INSTANCE);
-    }
-  }
-
-  /**
-   * Return `true` if the [ParserRuleContext.children] list is trimmed
-   * using the default [TrimToSizeListener] during the parse process.
-   */
-  bool get trimParseTree {
-    return parseListeners.contains(TrimToSizeListener.INSTANCE);
-  }
-  
   bool precpred(RuleContext localctx, int precedence) {
     return precedence >= _precedenceStack.last;
   }
@@ -355,7 +394,7 @@ abstract class Parser extends Recognizer<Token, ParserAtnSimulator> {
 
   void exitRule() {
     context.stop = _input.lookToken(-1);
-    // trigger event on _ctx, before it reverts to parent
+    // trigger event on context, before it reverts to parent
     if (_parseListeners != null) triggerExitRuleEvent();
     state = context.invokingState;
     context = context.parent;
@@ -373,7 +412,7 @@ abstract class Parser extends Recognizer<Token, ParserAtnSimulator> {
     }
     context = localctx;
   }
-  
+
   void enterRecursionRule(ParserRuleContext localctx, int state, int ruleIndex, int precedence) {
     this.state = state;
     _precedenceStack.add(precedence);
@@ -406,7 +445,7 @@ abstract class Parser extends Recognizer<Token, ParserAtnSimulator> {
     _precedenceStack.removeLast();
     context.stop = _input.lookToken(-1);
     ParserRuleContext retctx = context; // save current ctx (return value)
-    // unroll so _ctx is as it was before call to recursive method
+    // unroll so context is as it was before call to recursive method
     if (_parseListeners != null) {
       while (context != parentctx) {
         triggerExitRuleEvent();
@@ -535,21 +574,22 @@ abstract class Parser extends Recognizer<Token, ParserAtnSimulator> {
     return sb.toString();
   }
 
-  String get sourceName => _input.sourceName;
-
   /**
-   * During a parse is sometimes useful to listen in on the rule entry and exit
-   * events as well as token matches. This is for quick and dirty debugging.
+   * The ATN with bypass alternatives is expensive to create so we create it
+   * lazily.
+   *
+   * Throws UnsupportedError if the current parser does not
+   * implement the `serializedAtn` property.
    */
-  void set trace(bool trace) {
-    if (!trace) {
-      removeParseListener(_tracer);
-      _tracer = null;
-    } else {
-      if (_tracer != null) removeParseListener(_tracer);
-      else _tracer = new TraceListener(this);
-      addParseListener(_tracer);
+  Atn getAtnWithBypassAlts() {
+    Atn result = _bypassAltsAtnCache[serializedAtn];
+    if (result == null) {
+      AtnDeserializationOptions deserializationOptions = new AtnDeserializationOptions();
+      deserializationOptions.isGenerateRuleBypassTransitions = true;
+      result = new AtnDeserializer(deserializationOptions).deserialize(serializedAtn);
+      _bypassAltsAtnCache[serializedAtn] = result;
     }
+    return result;
   }
 }
 

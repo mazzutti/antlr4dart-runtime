@@ -35,6 +35,6 @@ class NoViableAltException extends RecognitionException {
                        this.deadEndConfigs,
                        ParserRuleContext ctx)
     : super(recognizer, input, ctx) {
-    _offendingToken = offendingToken;
+    this.offendingToken = offendingToken;
   }
 }

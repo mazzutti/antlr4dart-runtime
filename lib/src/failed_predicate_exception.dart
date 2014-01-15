@@ -29,7 +29,7 @@ class FailedPredicateException extends RecognitionException {
       _ruleIndex = 0;
       _predicateIndex = 0;
     }
-    _offendingToken = recognizer.currentToken;
+    offendingToken = recognizer.currentToken;
   }
 
   int get ruleIndex => _ruleIndex;

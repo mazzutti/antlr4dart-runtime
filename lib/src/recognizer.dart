@@ -6,6 +6,9 @@ abstract class Recognizer<T, AtnInterpreter extends AtnSimulator> {
 
   List<ErrorListener> _listeners;
 
+  static final _tokenTypeMapCache = new HashMap<List<String>, Map<String, int>>();
+  static final _ruleIndexMapCache = new HashMap<List<String>, Map<String, int>>();
+
   AtnInterpreter interpreter;
 
   /**
@@ -85,6 +88,66 @@ abstract class Recognizer<T, AtnInterpreter extends AtnSimulator> {
   }
 
   /**
+   * Get a map from token names to token types.
+   *
+   * Used for tree pattern compilation.
+   */
+  Map<String, int> get tokenTypeMap {
+    if (tokenNames == null) {
+      throw new UnsupportedError("The current recognizer does not provide a list of token names.");
+    }
+    Map<String, int> result = _tokenTypeMapCache[tokenNames];
+    if (result == null) {
+      Map<String, int> result = new HashMap<String, int>();
+      for (int i = 0; i < tokenNames.length; i++) {
+        result[tokenNames[i]] = i;
+      }
+      result["EOF"] = Token.EOF;
+      result = new UnmodifiableMapView(result);
+      _tokenTypeMapCache[tokenNames] = result;
+    }
+    return result;
+  }
+
+  /**
+   * Get a map from rule names to rule indexes.
+   *
+   * Used for tree pattern compilation.
+   */
+  Map<String, int> get ruleIndexMap {
+    if (ruleNames == null) {
+      throw new UnsupportedError("The current recognizer does not provide a list of rule names.");
+    }
+    Map<String, int> result = _ruleIndexMapCache[ruleNames];
+    if (result == null) {
+      Map<String, int> m = new HashMap<String, int>();
+      for (int i = 0; i < ruleNames.length; i++) {
+        m[ruleNames[i]] = i;
+      }
+      result = new UnmodifiableMapView(m);
+      _ruleIndexMapCache[ruleNames] = result;
+    }
+    return result;
+  }
+
+  int getTokenType(String tokenName) {
+    int ttype = tokenTypeMap[tokenName];
+    if (ttype != null) return ttype;
+    return Token.INVALID_TYPE;
+  }
+
+  /**
+   * If this recognizer was generated, it will have a serialized ATN
+   * representation of the grammar.
+   *
+   * For interpreters, we don't know their serialized ATN despite having
+   * created the interpreter from it.
+   */
+  String get serializedAtn {
+    throw new UnsupportedError("there is no serialized ATN");
+  }
+
+  /**
    * Throws [NullThrownError] if `listener` is `null`.
    */
   void addErrorListener(ErrorListener listener) {
@@ -105,7 +168,7 @@ abstract class Recognizer<T, AtnInterpreter extends AtnSimulator> {
   bool sempred(RuleContext _localctx, int ruleIndex, int actionIndex) {
     return true;
   }
-  
+
   bool precpred(RuleContext localctx, int precedence) {
     return true;
   }

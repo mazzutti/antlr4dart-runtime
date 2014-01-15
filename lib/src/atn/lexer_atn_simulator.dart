@@ -235,6 +235,9 @@ class LexerAtnSimulator extends AtnSimulator {
       if (currentAltReachedAcceptState && (c as LexerAtnConfig).hasPassedThroughNonGreedyDecision) {
         continue;
       }
+      if (_debug) {
+        print("testing ${getTokenName(t)} at ${c.toString(_recog, true)}");
+      }
       int n = c.state.numberOfTransitions;
       for (int ti = 0; ti < n; ti++) {               // for each transition
         Transition trans = c.state.transition(ti);
@@ -293,7 +296,9 @@ class LexerAtnSimulator extends AtnSimulator {
                 AtnConfigSet configs,
                 bool currentAltReachedAcceptState,
                 bool speculative) {
-
+    if (_debug) {
+      print("_closure(${config.toString(_recog, true)})");
+    }
     if (config.state is RuleStopState) {
       if (_debug) {
         if (_recog != null) {
@@ -467,7 +472,7 @@ class LexerAtnSimulator extends AtnSimulator {
   void __addDfaEdge(DfaState p, int t, DfaState q) {
     // Only track edges within the DFA bounds
     if (t < MIN_DFA_EDGE || t > MAX_DFA_EDGE) return;
-    if (_debug) print("EDGE $p -> $q upon $t");
+    if (_debug) print("EDGE $p -> $q upon '${new String.fromCharCode(t)}'");
     Dfa dfa = decisionToDfa[_mode];
     if (p.edges == null) {
       //  make room for tokens 1..n and -1 masquerading as index 0

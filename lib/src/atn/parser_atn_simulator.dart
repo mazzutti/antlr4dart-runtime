@@ -176,20 +176,53 @@ class ParserAtnSimulator extends AtnSimulator {
     int m = input.mark;
     int index = input.index;
     try {
-      if (dfa.s0 == null) {
+      DfaState s0;
+      if (dfa.isPrecedenceDfa) {
+        // the start state for a precedence DFA depends on the current
+        // parser precedence, and is provided by a DFA method.
+        s0 = dfa.getPrecedenceStartState(_parser.precedence);
+      } else {
+        // the start state for a "regular" DFA is just s0
+        s0 = dfa.s0;
+      }
+      if (s0 == null) {
         if (outerContext == null) outerContext = RuleContext.EMPTY;
         if (_debug || _debug_list_atn_decisions)  {
           print("predictATN decision ${dfa.decision}"
                      " exec lookAhead(1)==${getLookaheadName(input)}"
                      ", outerContext=${outerContext.toString(_parser)}");
         }
+
+        // If this is not a precedence Dfa, we check the ATN start state
+        // to determine if this ATN start state is the decision for the
+        // closure block that determines whether a precedence rule
+        // should continue or complete.
+        if (!dfa.isPrecedenceDfa && dfa.atnStartState is StarLoopEntryState) {
+          if ((dfa.atnStartState as StarLoopEntryState).precedenceRuleDecision) {
+            dfa.isPrecedenceDfa = true;
+          }
+        }
+
         bool fullCtx = false;
-        AtnConfigSet s0_closure = _computeStartState(
-            dfa.atnStartState, RuleContext.EMPTY, fullCtx);
-        dfa.s0 = _addDfaState_(dfa, new DfaState.config(s0_closure));
+        AtnConfigSet s0_closure = _computeStartState(dfa.atnStartState, RuleContext.EMPTY, fullCtx);
+
+        if (dfa.isPrecedenceDfa) {
+          // If this is a precedence DFA, we use applyPrecedenceFilter
+          // to convert the computed start state to a precedence start
+          // state. We then use Dfa.setPrecedenceStartState to set the
+          // appropriate start state for the precedence level rather
+          // than simply setting Dfa.s0.
+          s0_closure = _applyPrecedenceFilter(s0_closure);
+          s0 = _addDfaState_(dfa, new DfaState.config(s0_closure));
+          dfa.setPrecedenceStartState(_parser.precedence, s0);
+        } else {
+          s0 = _addDfaState_(dfa, new DfaState.config(s0_closure));
+          dfa.s0 = s0;
+        }
+        //dfa.s0 = _addDfaState_(dfa, new DfaState.config(s0_closure));
       }
       // We can start with an existing DFA
-      int alt = _execAtn(dfa, dfa.s0, input, index, outerContext);
+      int alt = _execAtn(dfa, s0, input, index, outerContext);
       if (_debug) print("DFA after predictATN: ${dfa.toString(_parser.tokenNames)}");
       return alt;
     } finally {
@@ -244,6 +277,59 @@ class ParserAtnSimulator extends AtnSimulator {
       }
       print("${c.toString(_parser, true)}:$trans");
     }
+  }
+
+  // This method transforms the start state computed by
+  // _computeStartState to the special start state used by a
+  // precedence DFA for a particular precedence value. The transformation
+  // process applies the following changes to the start state's configuration
+  //  set.
+  //
+  // Evaluate the precedence predicates for each configuration using
+  // SemanticContext.evalPrecedence.
+  // Remove all configurations which predict an alternative greater than
+  // 1, for which another configuration that predicts alternative 1 is in the
+  // same ATN state. This transformation is valid for the following reasons:
+  //
+  // The closure block cannot contain any epsilon transitions which bypass
+  // the body of the closure, so all states reachable via alternative 1 are
+  // part of the precedence alternatives of the transformed left-recursive
+  // rule.
+  // The "primary" portion of a left recursive rule cannot contain an
+  // epsilon transition, so the only way an alternative other than 1 can exist
+  // in a state that is also reachable via alternative 1 is by nesting calls
+  // to the left-recursive rule, with the outer calls not being at the
+  // preferred precedence level.
+  //
+  // configs is the configuration set computed by
+  // _computeStartState as the start state for the DFA.
+  // Return the transformed configuration set representing the start state
+  // for a precedence DFA at a particular precedence level (determined by
+  // calling Parser.precedence.
+  AtnConfigSet _applyPrecedenceFilter(AtnConfigSet configs) {
+    Set<int> statesFromAlt1 = new HashSet<int>();
+    AtnConfigSet configSet = new AtnConfigSet(configs.fullCtx);
+    for (AtnConfig config in configs) {
+      // handle alt 1 first
+      if (config.alt != 1) continue;
+      SemanticContext updatedContext = config.semanticContext.evalPrecedence(_parser, _outerContext);
+      if (updatedContext == null) continue;
+      statesFromAlt1.add(config.state.stateNumber);
+      if (updatedContext != config.semanticContext) {
+        configSet.add(new AtnConfig.from(config, semanticContext:updatedContext), _mergeCache);
+      } else {
+        configSet.add(config, _mergeCache);
+      }
+    }
+    for (AtnConfig config in configs) {
+      if (config.alt == 1) continue;
+      if (statesFromAlt1.contains(config.state.stateNumber)) {
+        // eliminated
+        continue;
+      }
+      configSet.add(config, _mergeCache);
+    }
+    return configSet;
   }
 
   // Performs ATN simulation to compute a predicted alternative based
@@ -566,6 +652,7 @@ class ParserAtnSimulator extends AtnSimulator {
     }
     AtnConfigSet intermediate = new AtnConfigSet(fullCtx);
 
+
     // Configurations already in a rule stop state indicate reaching the end
     // of the decision rule (local context) or end of the start rule (full
     // context). Once reached, these configurations are never updated by a
@@ -577,6 +664,7 @@ class ParserAtnSimulator extends AtnSimulator {
     // chosen when multiple such configurations can match the input.
     List<AtnConfig> skippedStopStates = null;
     // First figure out where we can reach on input t
+
     for (AtnConfig c in closure) {
       if (_debug) print("testing ${getTokenName(t)} at ${c.toString()}");
       if (c.state is RuleStopState) {
@@ -589,15 +677,17 @@ class ParserAtnSimulator extends AtnSimulator {
         }
         continue;
       }
+
       int n = c.state.numberOfTransitions;
-      for (int ti=0; ti<n; ti++) {  // for each transition
+      for (int ti = 0; ti < n; ti++) {  // for each transition
         Transition trans = c.state.transition(ti);
         AtnState target = _getReachableTarget(trans, t);
-        if ( target!=null ) {
+        if (target != null) {
           intermediate.add(new AtnConfig.from(c, state:target), _mergeCache);
         }
       }
     }
+
     // Now figure out where the reach operation can take us...
     AtnConfigSet reach = null;
     // This block optimizes the reach operation for intermediate sets which
@@ -630,7 +720,6 @@ class ParserAtnSimulator extends AtnSimulator {
         _closure(c, reach, closureBusy, false, fullCtx);
       }
     }
-
     if (t == IntSource.EOF) {
       // After consuming EOF no additional input is possible, so we are
       // only interested in configurations which reached the end of the
@@ -713,7 +802,7 @@ class ParserAtnSimulator extends AtnSimulator {
     // always at least the implicit call to start rule
     PredictionContext initialContext = PredictionContext.fromRuleContext(atn, ctx);
     AtnConfigSet configs = new AtnConfigSet(fullCtx);
-    for (int i=0; i<p.numberOfTransitions; i++) {
+    for (int i = 0; i < p.numberOfTransitions; i++) {
       AtnState target = p.transition(i).target;
       AtnConfig c = new AtnConfig(target, i+1, initialContext);
       Set<AtnConfig> closureBusy = new HashSet<AtnConfig>();
@@ -941,7 +1030,7 @@ class ParserAtnSimulator extends AtnSimulator {
       default: return null;
     }
   }
-  
+
   AtnConfig _precedenceTransition(AtnConfig config,
                                   PrecedencePredicateTransition pt,
                                   bool collectPredicates,

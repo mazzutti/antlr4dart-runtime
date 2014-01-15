@@ -4,4 +4,5 @@ version: 0.1.2
 homepage: https://github.com/tiagomazzutti/antlr4dart-runtime.git
 description: ANTLR4 runtime library for Dart.
 dependencies:
+  collection: any
   fixnum: any

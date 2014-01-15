@@ -7,6 +7,6 @@ part of antlr4dart;
 class InputMismatchException extends RecognitionException {
   InputMismatchException(Parser recognizer)
       : super(recognizer, recognizer.inputSource, recognizer.context) {
-    _offendingToken = recognizer.currentToken;
+    offendingToken = recognizer.currentToken;
   }
 }
