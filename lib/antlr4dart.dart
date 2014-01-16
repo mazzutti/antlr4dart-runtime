@@ -94,6 +94,7 @@ part 'src/misc/int_set.dart';
 part 'src/misc/mirror_util.dart';
 part 'src/misc/murmur_hash.dart';
 part 'src/misc/pair.dart';
+part 'src/tree/abstract_parse_tree_visitor.dart';
 part 'src/tree/error_node.dart';
 part 'src/tree/parse_tree.dart';
 part 'src/tree/parse_tree_listener.dart';
