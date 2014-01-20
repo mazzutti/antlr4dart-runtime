@@ -1,30 +1,31 @@
 part of antlr4dart;
 
 class LexerAtnConfig extends AtnConfig {
+
   /**
-   * Capture lexer action we traverse.
+   * Capture lexer actions we traverse.
    */
-  int lexerActionIndex = -1;
+  LexerActionExecutor lexerActionExecutor;
 
   final bool hasPassedThroughNonGreedyDecision;
 
   LexerAtnConfig(AtnState state,
                  int alt,
                  PredictionContext context,
-                 [this.lexerActionIndex = -1])
+                 [this.lexerActionExecutor])
     : super(state, alt, context, SemanticContext.NONE),
       hasPassedThroughNonGreedyDecision = false;
 
   LexerAtnConfig.from(LexerAtnConfig c,
                       AtnState state,
-                      {int actionIndex,
+                      {LexerActionExecutor actionExecutor,
                       PredictionContext context})
     : super.from(c, state:state,
                  context:(context != null) ? context: c.context,
                  semanticContext:c.semanticContext),
       hasPassedThroughNonGreedyDecision =
         c.hasPassedThroughNonGreedyDecision || state is DecisionState && state.nonGreedy {
-    lexerActionIndex = (actionIndex != null) ? actionIndex : c.lexerActionIndex;
+    lexerActionExecutor = (actionExecutor != null) ? actionExecutor : c.lexerActionExecutor;
   }
 
   int get hashCode {
@@ -34,7 +35,8 @@ class LexerAtnConfig extends AtnConfig {
     hashCode = MurmurHash.update(hashCode, context.hashCode);
     hashCode = MurmurHash.update(hashCode, semanticContext.hashCode);
     hashCode = MurmurHash.update(hashCode, hasPassedThroughNonGreedyDecision ? 1 : 0);
-    hashCode = MurmurHash.finish(hashCode, 5);
+    hashCode = MurmurHash.update(hashCode, lexerActionExecutor.hashCode);
+    hashCode = MurmurHash.finish(hashCode, 6);
     return hashCode;
   }
 
@@ -43,6 +45,9 @@ class LexerAtnConfig extends AtnConfig {
     LexerAtnConfig lexerOther = other;
     if (hasPassedThroughNonGreedyDecision
         != lexerOther.hasPassedThroughNonGreedyDecision) {
+      return false;
+    }
+    if (lexerActionExecutor != lexerOther.lexerActionExecutor) {
       return false;
     }
     return super == other;

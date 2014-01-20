@@ -75,8 +75,9 @@ class StringSource implements CharSource {
       _p = index; // just jump; don't update source state (line, ...)
       return;
     }
-    // seek forward, consume until p hits index
-    while (_p < index && index < _data.length) {
+    // seek forward, consume until p hits index or n (whichever comes first)
+    index = min(index, _data.length);
+    while (_p < index) {
       consume();
     }
   }

@@ -21,7 +21,7 @@ abstract class AbstractParseTreeVisitor<T> implements ParseTreeVisitor<T> {
   T visitChildren(RuleNode node) {
     T result = defaultResult();
     int n = node.childCount;
-    for (int i=0; i<n; i++) {
+    for (int i = 0; i < n; i++) {
       if (!shouldVisitNextChild(node, result)) {
         break;
       }

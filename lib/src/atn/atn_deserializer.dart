@@ -4,14 +4,16 @@ class AtnDeserializer {
 
   static const String _BASE_SERIALIZED_UUID = "33761B2D-78BB-4A43-8B0B-4F5BEE8AACF3";
   static const String _ADDED_PRECEDENCE_TRANSITIONS = "1DA0C57D-6C06-438A-9B27-10BCB3CE0F61";
+  static const String _ADDED_LEXER_ACTIONS = "AADB8D7E-AEEF-4415-AD2B-8204D6CF042E";
 
   static const int SERIALIZED_VERSION = 3;
 
-  static const String SERIALIZED_UUID = _ADDED_PRECEDENCE_TRANSITIONS;
+  static const String SERIALIZED_UUID = _ADDED_LEXER_ACTIONS;
 
   static const List<String> _SUPPORTED_UUIDS = const <String>[
     _BASE_SERIALIZED_UUID,
-    _ADDED_PRECEDENCE_TRANSITIONS
+    _ADDED_PRECEDENCE_TRANSITIONS,
+    _ADDED_LEXER_ACTIONS
   ];
 
   final AtnDeserializationOptions _deserializationOptions;
@@ -33,12 +35,13 @@ class AtnDeserializer {
     }
     String uuid = toUuid(codes.getRange(p, p += 8).toList());
 
-    if (uuid != SERIALIZED_UUID) {
-      throw new UnsupportedError(
-          "Could not deserialize ATN with UUID $uuid (expected $SERIALIZED_UUID).");
+    if (!_SUPPORTED_UUIDS.contains(uuid)) {
+      String reason = "Could not deserialize ATN with UUID $uuid (expected $SERIALIZED_UUID or a legacy UUID).";
+      throw new UnsupportedError(reason);
     }
 
     bool supportsPrecedencePredicates = _isFeatureSupported(_ADDED_PRECEDENCE_TRANSITIONS, uuid);
+    bool supportsLexerActions = _isFeatureSupported(_ADDED_LEXER_ACTIONS, uuid);
 
     AtnType grammarType = AtnType.values[codes[p++]];
     int maxTokenType = codes[p++];
@@ -95,7 +98,6 @@ class AtnDeserializer {
     int nrules = codes[p++];
     if (atn.grammarType == AtnType.LEXER) {
       atn.ruleToTokenType = new List<int>(nrules);
-      atn.ruleToActionIndex = new List<int>(nrules);
     }
     atn.ruleToStartState = new List<RuleStartState>(nrules);
     for (int i = 0; i < nrules; i++) {
@@ -106,9 +108,14 @@ class AtnDeserializer {
         int tokenType = codes[p++];
         if (tokenType == 0xFFFF) tokenType = Token.EOF;
         atn.ruleToTokenType[i] = tokenType;
-        int actionIndex = codes[p++];
-        if (actionIndex == -1) actionIndex = 65535;
-        atn.ruleToActionIndex[i] = actionIndex;
+        if (!_isFeatureSupported(_ADDED_LEXER_ACTIONS, uuid)) {
+          // this piece of unused metadata was serialized prior to the
+          // addition of LexerAction
+          int actionIndexIgnored = codes[p++];
+          if (actionIndexIgnored == 0xFFFF) {
+            actionIndexIgnored = -1;
+          }
+        }
       }
     }
     atn.ruleToStopState = new List<RuleStopState>(nrules);
@@ -191,6 +198,38 @@ class AtnDeserializer {
       DecisionState decState = atn.states[codes[p++]];
       atn.decisionToState.add(decState);
       decState.decision = i-1;
+    }
+
+    // LEXER ACTIONS
+    //
+    if (atn.grammarType == AtnType.LEXER) {
+      if (supportsLexerActions) {
+        atn.lexerActions = new List<LexerAction>(codes[p++]);
+        for (int i = 0; i < atn.lexerActions.length; i++) {
+            LexerActionType actionType = LexerActionType.values[codes[p++]];
+            int data1 = codes[p++];
+            int data2 = codes[p++];
+            LexerAction lexerAction = _lexerActionFactory(actionType, data1, data2);
+            atn.lexerActions[i] = lexerAction;
+          }
+      } else {
+        // for compatibility with older serialized ATNs, convert the old
+        // serialized action index for action transitions to the new
+        // form, which is the index of a LexerCustomAction
+        List<LexerAction> legacyLexerActions = new List<LexerAction>();
+        for (AtnState state in atn.states) {
+          for (int i = 0; i < state.numberOfTransitions; i++) {
+            Transition transition = state.transition(i);
+            if (transition is! ActionTransition) continue;
+            int ruleIndex = (transition as ActionTransition).ruleIndex;
+            int actionIndex = (transition as ActionTransition).actionIndex;
+            LexerCustomAction lexerAction = new LexerCustomAction(ruleIndex, actionIndex);
+            state.setTransition(i, new ActionTransition(transition.target, ruleIndex, legacyLexerActions.length, false));
+            legacyLexerActions.add(lexerAction);
+          }
+        }
+        atn.lexerActions = legacyLexerActions;
+      }
     }
 
     _markPrecedenceDecisions(atn);
@@ -290,6 +329,30 @@ class AtnDeserializer {
       }
     }
   }
+
+  LexerAction _lexerActionFactory(LexerActionType type, int data1, int data2) {
+    switch (type) {
+      case LexerActionType.CHANNEL:
+        return new LexerChannelAction(data1);
+      case LexerActionType.CUSTOM:
+        return new LexerCustomAction(data1, data2);
+      case LexerActionType.MODE:
+        return new LexerModeAction(data1);
+      case LexerActionType.MORE:
+        return LexerMoreAction.INSTANCE;
+      case LexerActionType.POP_MODE:
+        return LexerPopModeAction.INSTANCE;
+      case LexerActionType.PUSH_MODE:
+        return new LexerPushModeAction(data1);
+      case LexerActionType.SKIP:
+        return LexerSkipAction.INSTANCE;
+      case LexerActionType.TYPE:
+        return new LexerTypeAction(data1);
+      default:
+        String message = "The specified lexer action type $type is not valid.";
+        throw new ArgumentError(message);
+      }
+    }
 
   static void _verifyAtn(Atn atn) {
     // verify assumptions

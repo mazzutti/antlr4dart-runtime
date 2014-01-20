@@ -11,10 +11,10 @@ class LexerInterpreter extends Lexer {
   final List<Dfa> decisionToDfa;
   final PredictionContextCache sharedContextCache = new PredictionContextCache();
 
-  LexerInterpreter(this.grammarFileName, 
-                   this.tokenNames, 
-                   this.ruleNames, 
-                   this.modeNames, 
+  LexerInterpreter(this.grammarFileName,
+                   this.tokenNames,
+                   this.ruleNames,
+                   this.modeNames,
                    Atn atn, CharSource input) : super(input),
     decisionToDfa = new List<Dfa>(atn.numberOfDecisions),
     this.atn = atn {
@@ -24,6 +24,6 @@ class LexerInterpreter extends Lexer {
     for (int i = 0; i < decisionToDfa.length; i++) {
       decisionToDfa[i] = new Dfa(atn.getDecisionState(i), i);
     }
-    interpreter = new LexerAtnSimulator(atn, decisionToDfa, sharedContextCache);
+    interpreter = new LexerAtnSimulator(atn, decisionToDfa, sharedContextCache, this);
   }
 }

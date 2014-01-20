@@ -42,12 +42,10 @@ class Atn {
   List<int> ruleToTokenType;
 
   /**
-   * For lexer ATNs, this maps the rule index to the action which should be
-   * executed following a match.
-   *
-   * This is `null` for parser ATNs.
+   * For lexer ATNs, this is an array of [LexerAction] objects which may
+   * be referenced by action transitions in the ATN.
    */
-  List<int> ruleToActionIndex;
+  List<LexerAction> lexerActions;
 
   final List<TokensStartState> modeToStartState = new List<TokensStartState>();
 

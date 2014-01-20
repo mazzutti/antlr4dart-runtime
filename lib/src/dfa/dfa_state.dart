@@ -46,15 +46,7 @@ class DfaState {
    */
   int prediction;
 
-  /*
-   * If accept, exec action in what rule?
-   */
-  int lexerRuleIndex = -1;
-
-  /*
-   * If accept, exec what action?
-   */
-  int lexerActionIndex = -1;
+  LexerActionExecutor lexerActionExecutor;
 
   /**
    * Indicates that this state was created during SLL prediction that
