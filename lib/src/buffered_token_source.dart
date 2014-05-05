@@ -139,7 +139,21 @@ class BufferedTokenSource implements TokenSource {
   }
 
   void consume() {
-    if (lookAhead(1) == IntSource.EOF) {
+    bool skipEofCheck;
+    if (_p >= 0) {
+      if (_fetchedEof) {
+        // the last token in tokens is EOF. skip check if p indexes any
+        // fetched token except the last.
+        skipEofCheck = _p < tokens.length - 1;
+      } else {
+        // no EOF token in tokens. skip check if p indexes a fetched token.
+        skipEofCheck = _p < tokens.length;
+      }
+    } else {
+      // not yet initialized
+      skipEofCheck = false;
+    }
+    if (!skipEofCheck && lookAhead(1) == IntSource.EOF) {
       throw new StateError("cannot consume EOF");
     }
     if (_sync(_p + 1)) {

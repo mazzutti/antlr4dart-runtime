@@ -9,8 +9,6 @@ abstract class SemanticContext {
 
   static final SemanticContext NONE = new Predicate();
 
-  SemanticContext parent;
-
   /**
    * For context independent predicates, we evaluate them without a local
    * context (i.e., null context). That way, we can evaluate them without

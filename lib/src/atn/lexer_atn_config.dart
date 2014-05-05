@@ -5,7 +5,7 @@ class LexerAtnConfig extends AtnConfig {
   /**
    * Capture lexer actions we traverse.
    */
-  LexerActionExecutor lexerActionExecutor;
+  final LexerActionExecutor lexerActionExecutor;
 
   final bool hasPassedThroughNonGreedyDecision;
 
@@ -20,12 +20,12 @@ class LexerAtnConfig extends AtnConfig {
                       AtnState state,
                       {LexerActionExecutor actionExecutor,
                       PredictionContext context})
-    : super.from(c, state:state,
+    : lexerActionExecutor = (actionExecutor != null) ? actionExecutor : c.lexerActionExecutor,
+      super.from(c, state:state,
                  context:(context != null) ? context: c.context,
                  semanticContext:c.semanticContext),
       hasPassedThroughNonGreedyDecision =
         c.hasPassedThroughNonGreedyDecision || state is DecisionState && state.nonGreedy {
-    lexerActionExecutor = (actionExecutor != null) ? actionExecutor : c.lexerActionExecutor;
   }
 
   int get hashCode {

@@ -389,12 +389,13 @@ class ParserAtnSimulator extends AtnSimulator {
         // ATN states in SLL implies LL will also get nowhere.
         // If conflict in states that dip out, choose min since we
         // will get error no matter what.
-        int alt = _getAltThatFinishedDecisionEntryRule(previousD.configs);
+        NoViableAltException e = _noViableAlt(input, outerContext, previousD.configs, startIndex);
+        input.seek(startIndex);
+        int alt = _getSynValidOrSemInvalidAltThatFinishedDecisionEntryRule(previousD.configs, outerContext);
         if (alt != Atn.INVALID_ALT_NUMBER) {
-          // return w/o altering DFA
           return alt;
         }
-        throw _noViableAlt(input, outerContext, previousD.configs, startIndex);
+        throw e;
       }
       if (D.requiresFullContext && predictionMode != PredictionMode.SLL) {
         BitSet conflictingAlts = null;
@@ -544,7 +545,7 @@ class ParserAtnSimulator extends AtnSimulator {
                               TokenSource input, int startIndex,
                               ParserRuleContext outerContext) {
     if (_debug || _debug_list_atn_decisions) {
-      print("execATNWithFullContext $s0");
+      print("execAtnWithFullContext $s0");
     }
     bool fullCtx = true;
     bool foundExactAmbig = false;
@@ -565,11 +566,13 @@ class ParserAtnSimulator extends AtnSimulator {
         // ATN states in SLL implies LL will also get nowhere.
         // If conflict in states that dip out, choose min since we
         // will get error no matter what.
-        int alt = _getAltThatFinishedDecisionEntryRule(previous);
+        NoViableAltException e = _noViableAlt(input, outerContext, previous, startIndex);
+        input.seek(startIndex);
+        int alt = _getSynValidOrSemInvalidAltThatFinishedDecisionEntryRule(previous, outerContext);
         if (alt != Atn.INVALID_ALT_NUMBER) {
           return alt;
         }
-        throw _noViableAlt(input, outerContext, previous, startIndex);
+        throw e;
       }
       Iterable<BitSet> altSubSets = PredictionMode.getConflictingAltSubsets(reach);
       if (_debug) {
@@ -645,6 +648,54 @@ class ParserAtnSimulator extends AtnSimulator {
     return predictedAlt;
   }
 
+  int _getSynValidOrSemInvalidAltThatFinishedDecisionEntryRule(AtnConfigSet configs,
+                                                               ParserRuleContext outerContext) {
+    Pair<AtnConfigSet,AtnConfigSet> sets = _splitAccordingToSemanticValidity(configs, outerContext);
+    AtnConfigSet semValidConfigs = sets.a;
+    AtnConfigSet semInvalidConfigs = sets.b;
+    int alt = _getAltThatFinishedDecisionEntryRule(semValidConfigs);
+    // semantically/syntactically viable path exists
+    if (alt != Atn.INVALID_ALT_NUMBER) {
+      return alt;
+    }
+    // Is there a syntactically valid path with a failed pred?
+    if (!semInvalidConfigs.isEmpty) {
+      alt = _getAltThatFinishedDecisionEntryRule(semInvalidConfigs);
+      // syntactically viable path exists
+      if (alt != Atn.INVALID_ALT_NUMBER) {
+        return alt;
+      }
+    }
+    return Atn.INVALID_ALT_NUMBER;
+  }
+
+  // Walk the list of configurations and split them according to
+  // those that have preds evaluating to true/false.  If no pred, assume
+  // true pred and include in succeeded set.  Returns Pair of sets.
+  //
+  // Create a new set so as not to alter the incoming parameter.
+  //
+  // Assumption: the input stream has been restored to the starting point
+  // prediction, which is where predicates need to evaluate.
+  Pair<AtnConfigSet,AtnConfigSet> _splitAccordingToSemanticValidity(AtnConfigSet configs,
+                                                                    ParserRuleContext outerContext) {
+    AtnConfigSet succeeded = new AtnConfigSet(configs.fullCtx);
+    AtnConfigSet failed = new AtnConfigSet(configs.fullCtx);;
+    for (AtnConfig c in configs) {
+      if (c.semanticContext != SemanticContext.NONE ) {
+        bool predicateEvaluationResult = c.semanticContext.eval(_parser, outerContext);
+        if (predicateEvaluationResult) {
+          succeeded.add(c);
+        } else {
+          failed.add(c);
+        }
+      } else {
+        succeeded.add(c);
+      }
+    }
+    return new Pair(succeeded, failed);
+  }
+
   AtnConfigSet _computeReachSet(AtnConfigSet closure, int t, bool fullCtx) {
     if (_debug) print("in computeReachSet, starting closure: $closure");
     if (_mergeCache == null) {
@@ -697,8 +748,8 @@ class ParserAtnSimulator extends AtnSimulator {
     // The conditions assume that intermediate
     // contains all configurations relevant to the reach set, but this
     // condition is not true when one or more configurations have been
-    // withheld in skippedStopStates.
-    if (skippedStopStates == null) {
+    // withheld in skippedStopStates, or when the current symbol is EOF.
+    if (skippedStopStates == null && t != Token.EOF) {
       if (intermediate.length == 1) {
         // Don't pursue the closure if there is just one state.
         // It can only have one alternative; just add to result
@@ -716,8 +767,9 @@ class ParserAtnSimulator extends AtnSimulator {
     if (reach == null) {
       reach = new AtnConfigSet(fullCtx);
       Set<AtnConfig> closureBusy = new HashSet<AtnConfig>();
+      bool treatEofAsEpsilon = t == Token.EOF;
       for (AtnConfig c in intermediate) {
-        _closure(c, reach, closureBusy, false, fullCtx);
+        _closure(c, reach, closureBusy, false, fullCtx, treatEofAsEpsilon);
       }
     }
     if (t == IntSource.EOF) {
@@ -806,7 +858,7 @@ class ParserAtnSimulator extends AtnSimulator {
       AtnState target = p.transition(i).target;
       AtnConfig c = new AtnConfig(target, i+1, initialContext);
       Set<AtnConfig> closureBusy = new HashSet<AtnConfig>();
-      _closure(c, configs, closureBusy, true, fullCtx);
+      _closure(c, configs, closureBusy, true, fullCtx, false);
     }
     return configs;
   }
@@ -913,10 +965,11 @@ class ParserAtnSimulator extends AtnSimulator {
                 AtnConfigSet configs,
                 Set<AtnConfig> closureBusy,
                 bool collectPredicates,
-                bool fullCtx) {
+                bool fullCtx,
+                bool treatEofAsEpsilon) {
     final int initialDepth = 0;
     _closureCheckingStopState(config,
-        configs, closureBusy, collectPredicates, fullCtx, initialDepth);
+        configs, closureBusy, collectPredicates, fullCtx, initialDepth, treatEofAsEpsilon);
     assert(!fullCtx || !configs.dipsIntoOuterContext);
   }
 
@@ -925,7 +978,8 @@ class ParserAtnSimulator extends AtnSimulator {
                                  Set<AtnConfig> closureBusy,
                                  bool collectPredicates,
                                  bool fullCtx,
-                                 int depth) {
+                                 int depth,
+                                 bool treatEofAsEpsilon) {
     if (_debug) print("_closure(${config.toString(_parser,true)})");
     if (config.state is RuleStopState) {
       // We hit rule end. If we have context info, use it
@@ -940,7 +994,7 @@ class ParserAtnSimulator extends AtnSimulator {
             } else {
               // we have no context info, just chase follow links (if greedy)
               if (_debug) print("FALLING off rule ${getRuleName(config.state.ruleIndex)}");
-              _closure_(config, configs, closureBusy, collectPredicates, fullCtx, depth);
+              _closure_(config, configs, closureBusy, collectPredicates, fullCtx, depth, treatEofAsEpsilon);
             }
             continue;
           }
@@ -952,7 +1006,7 @@ class ParserAtnSimulator extends AtnSimulator {
           // Make sure we track that we are now out of context.
           c.reachesIntoOuterContext = config.reachesIntoOuterContext;
           assert (depth > -pow(2, 53));
-          _closureCheckingStopState(c, configs, closureBusy, collectPredicates, fullCtx, depth - 1);
+          _closureCheckingStopState(c, configs, closureBusy, collectPredicates, fullCtx, depth - 1, treatEofAsEpsilon);
         }
         return;
       } else if (fullCtx) {
@@ -964,16 +1018,17 @@ class ParserAtnSimulator extends AtnSimulator {
         if (_debug) print("FALLING off rule ${getRuleName(config.state.ruleIndex)}");
       }
     }
-    _closure_(config, configs, closureBusy, collectPredicates, fullCtx, depth);
+    _closure_(config, configs, closureBusy, collectPredicates, fullCtx, depth, treatEofAsEpsilon);
   }
 
-  /** Do the actual work of walking epsilon edges */
+  // Do the actual work of walking epsilon edges.
   void _closure_(AtnConfig config,
                  AtnConfigSet configs,
                  Set<AtnConfig> closureBusy,
                  bool collectPredicates,
                  bool fullCtx,
-                 int depth) {
+                 int depth,
+                 bool treatEofAsEpsilon) {
     AtnState p = config.state;
     // optimization
     if (!p.onlyHasEpsilonTransitions) {
@@ -982,8 +1037,13 @@ class ParserAtnSimulator extends AtnSimulator {
     for (int i = 0; i < p.numberOfTransitions; i++) {
       Transition t = p.transition(i);
       bool continueCollecting = (t is! ActionTransition) && collectPredicates;
-      AtnConfig c = _getEpsilonTarget(config, t, continueCollecting, depth == 0, fullCtx);
+      AtnConfig c = _getEpsilonTarget(config, t, continueCollecting, depth == 0, fullCtx, treatEofAsEpsilon);
       if (c != null) {
+        if (!t.isEpsilon && !closureBusy.add(c)) {
+          // avoid infinite recursion for EOF* and EOF+
+          // continue;
+          continue;
+        }
         int newDepth = depth;
         if (config.state is RuleStopState) {
           assert(!fullCtx);
@@ -1006,7 +1066,7 @@ class ParserAtnSimulator extends AtnSimulator {
           // latch when newDepth goes negative - once we step out of the entry context we can't return
           if (newDepth >= 0) newDepth++;
         }
-        _closureCheckingStopState(c, configs, closureBusy, continueCollecting, fullCtx, newDepth);
+        _closureCheckingStopState(c, configs, closureBusy, continueCollecting, fullCtx, newDepth, treatEofAsEpsilon);
       }
     }
   }
@@ -1015,7 +1075,8 @@ class ParserAtnSimulator extends AtnSimulator {
                               Transition t,
                               bool collectPredicates,
                               bool inContext,
-                              bool fullCtx) {
+                              bool fullCtx,
+                              bool treatEofAsEpsilon) {
     switch (t.serializationType) {
       case Transition.RULE:
         return _ruleTransition(config, t);
@@ -1027,6 +1088,17 @@ class ParserAtnSimulator extends AtnSimulator {
         return _actionTransition(config, t);
       case Transition.EPSILON:
         return new AtnConfig.from(config, state:t.target);
+      case Transition.ATOM:
+      case Transition.RANGE:
+      case Transition.SET:
+        // EOF transitions act like epsilon transitions after the first EOF
+        // transition is traversed
+        if (treatEofAsEpsilon) {
+          if (t.matches(Token.EOF, 0, 1)) {
+            return new AtnConfig.from(config, state:t.target);
+          }
+        }
+        return null;
       default: return null;
     }
   }

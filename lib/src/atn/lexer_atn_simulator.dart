@@ -246,8 +246,9 @@ class LexerAtnSimulator extends AtnSimulator {
           if (lexerActionExecutor != null) {
             lexerActionExecutor = lexerActionExecutor.fixOffsetBeforeMatch(input.index - _startIndex);
           }
+          bool treatEofAsEpsilon = t == IntSource.EOF;
           if (_closure(input, new LexerAtnConfig.from(c,
-              target, actionExecutor:lexerActionExecutor), reach, currentAltReachedAcceptState, true)) {
+              target, actionExecutor:lexerActionExecutor), reach, currentAltReachedAcceptState, true, treatEofAsEpsilon)) {
             // any remaining configs for this alt have a lower priority than
             // the one that just reached an accept state.
             skipAlt = c.alt;
@@ -285,7 +286,7 @@ class LexerAtnSimulator extends AtnSimulator {
     for (int i = 0; i< p.numberOfTransitions; i++) {
       AtnState target = p.transition(i).target;
       LexerAtnConfig c = new LexerAtnConfig(target, i + 1, initialContext);
-      _closure(input, c, configs, false, false);
+      _closure(input, c, configs, false, false, false);
     }
     return configs;
   }
@@ -301,7 +302,8 @@ class LexerAtnSimulator extends AtnSimulator {
                 LexerAtnConfig config,
                 AtnConfigSet configs,
                 bool currentAltReachedAcceptState,
-                bool speculative) {
+                bool speculative,
+                bool treatEofAsEpsilon) {
     if (_debug) {
       print("_closure(${config.toString(_recog, true)})");
     }
@@ -327,8 +329,8 @@ class LexerAtnSimulator extends AtnSimulator {
           if (config.context.getReturnState(i) != PredictionContext.EMPTY_RETURN_STATE) {
             PredictionContext newContext = config.context.getParent(i); // "pop" return state
             AtnState returnState = atn.states[config.context.getReturnState(i)];
-            LexerAtnConfig c = new LexerAtnConfig(returnState, config.alt, newContext);
-            currentAltReachedAcceptState = _closure(input, c, configs, currentAltReachedAcceptState, speculative);
+            LexerAtnConfig c = new LexerAtnConfig.from(config, returnState, context:newContext);
+            currentAltReachedAcceptState = _closure(input, c, configs, currentAltReachedAcceptState, speculative, treatEofAsEpsilon);
           }
         }
       }
@@ -343,9 +345,9 @@ class LexerAtnSimulator extends AtnSimulator {
     AtnState p = config.state;
     for (int i = 0; i < p.numberOfTransitions; i++) {
       Transition t = p.transition(i);
-      LexerAtnConfig c = _getEpsilonTarget(input, config, t, configs, speculative);
+      LexerAtnConfig c = _getEpsilonTarget(input, config, t, configs, speculative, treatEofAsEpsilon);
       if (c != null) {
-        currentAltReachedAcceptState = _closure(input, c, configs, currentAltReachedAcceptState, speculative);
+        currentAltReachedAcceptState = _closure(input, c, configs, currentAltReachedAcceptState, speculative, treatEofAsEpsilon);
       }
     }
     return currentAltReachedAcceptState;
@@ -356,7 +358,8 @@ class LexerAtnSimulator extends AtnSimulator {
                                    LexerAtnConfig config,
                                    Transition t,
                                    AtnConfigSet configs,
-                                   bool speculative) {
+                                   bool speculative,
+                                   bool treatEofAsEpsilon) {
     LexerAtnConfig c = null;
     switch (t.serializationType) {
       case Transition.RULE:
@@ -405,6 +408,16 @@ class LexerAtnSimulator extends AtnSimulator {
         break;
       case Transition.EPSILON:
         c = new LexerAtnConfig.from(config, t.target);
+        break;
+      case Transition.ATOM:
+      case Transition.RANGE:
+      case Transition.SET:
+        if (treatEofAsEpsilon) {
+          if (t.matches(IntSource.EOF, '\u0000'.codeUnitAt(0), '\uFFFF'.codeUnitAt(0))) {
+            c = new LexerAtnConfig.from(config, t.target);
+            break;
+          }
+        }
         break;
     }
     return c;

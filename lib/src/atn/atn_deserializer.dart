@@ -208,7 +208,9 @@ class AtnDeserializer {
         for (int i = 0; i < atn.lexerActions.length; i++) {
             LexerActionType actionType = LexerActionType.values[codes[p++]];
             int data1 = codes[p++];
+            data1 = data1 == 0xFFFF ? -1 : data1;
             int data2 = codes[p++];
+            data2 = data2 == 0xFFFF ? -1 : data2;
             LexerAction lexerAction = _lexerActionFactory(actionType, data1, data2);
             atn.lexerActions[i] = lexerAction;
           }
