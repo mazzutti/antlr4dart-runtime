@@ -4,7 +4,7 @@ import 'dart:mirrors';
 import 'dart:collection';
 import 'dart:math';
 import 'package:fixnum/fixnum.dart';
-import 'package:collection/collection.dart';
+import 'package:collection/equality.dart';
 
 part 'src/base_error_listener.dart';
 part 'src/buffered_token_source.dart';
