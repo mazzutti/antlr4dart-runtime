@@ -1,17 +1,15 @@
 part of antlr4dart;
 
-/**
- * Buffer all input tokens but do on-demand fetching of new tokens from lexer.
- * Useful when the parser or lexer has to set context/mode info before proper
- * lexing of future tokens. The ST template parser needs this, for example,
- * because it has to constantly flip back and forth between inside/output
- * templates. E.g., `<names:{hi, <it>}>` has to parse names as part of an
- * expression but `"hi, <it>"` as a nested template.
- *
- * You can't use this source if you pass whitespace or other off-channel tokens
- * to the parser. The source can't ignore off-channel tokens.
- * ([UnbufferedTokenSource] is the same way.) Use [CommonTokenSource].
- */
+/// Buffer all input tokens but do on-demand fetching of new tokens from lexer.
+/// Useful when the parser or lexer has to set context/mode info before proper
+/// lexing of future tokens. The ST template parser needs this, for example,
+/// because it has to constantly flip back and forth between inside/output
+/// templates. E.g., `<names:{hi, <it>}>` has to parse names as part of an
+/// expression but `"hi, <it>"` as a nested template.
+///
+/// You can't use this source if you pass whitespace or other off-channel tokens
+/// to the parser. The source can't ignore off-channel tokens.
+/// ([UnbufferedTokenSource] is the same way.) Use [CommonTokenSource].
 class BufferedTokenSource implements TokenSource {
   TokenProvider _tokenProvider;
 
@@ -49,18 +47,14 @@ class BufferedTokenSource implements TokenSource {
 
   String get sourceName => _tokenProvider.sourceName;
 
-  /**
-   * Get the text of all tokens in this buffer.
-   * */
+  /// Get the text of all tokens in this buffer.
   String get text {
     _lazyInit();
     fill();
     return getTextIn(Interval.of(0, length - 1));
   }
 
-  /**
-   * Reset this token source by setting its token source.
-   */
+  /// Reset this token source by setting its token source.
   void set tokenProvider(TokenProvider tokenProvider) {
     _tokenProvider = tokenProvider;
     _tokens.clear();
@@ -89,9 +83,7 @@ class BufferedTokenSource implements TokenSource {
     return "";
   }
 
-  /**
-   * Get all tokens from lexer until EOF.
-   */
+  /// Get all tokens from lexer until EOF.
   void fill() {
     _lazyInit();
     int blockSize = 1000;
@@ -103,11 +95,9 @@ class BufferedTokenSource implements TokenSource {
     }
   }
 
-  /**
-   * Given a start and stop index, return a List of all tokens in
-   * the token type BitSet.  Return null if no tokens were found.  This
-   * method looks at both on and off channel tokens.
-   */
+  /// Given a start and stop index, return a List of all tokens in
+  /// the token type BitSet.  Return null if no tokens were found.  This
+  /// method looks at both on and off channel tokens.
   List<Token> getTokens(int start, int stop, [Set<int> types]) {
     _lazyInit();
     if (start < 0 || stop >= _tokens.length || stop < 0 || start >= _tokens.length) {
@@ -169,9 +159,7 @@ class BufferedTokenSource implements TokenSource {
     return _tokens[i];
   }
 
-  /**
-   * Get all tokens from start..stop inclusively
-   */
+  /// Get all tokens from start..stop inclusively
   List<Token> getRange(int start, int stop) {
     if (start < 0 || stop < 0) return null;
     _lazyInit();
@@ -200,11 +188,9 @@ class BufferedTokenSource implements TokenSource {
     return _tokens[i];
   }
 
-  /**
-   * Collect all tokens on specified channel to the right of
-   * the current token up until we see a token on DEFAULT_TOKEN_CHANNEL or
-   * EOF. If channel is -1, find any non default channel token.
-   */
+  /// Collect all tokens on specified channel to the right of
+  /// the current token up until we see a token on DEFAULT_TOKEN_CHANNEL or
+  /// EOF. If channel is -1, find any non default channel token.
   List<Token> getHiddenTokensToRight(int tokenIndex, [int channel = -1]) {
     _lazyInit();
     if ( tokenIndex<0 || tokenIndex >= _tokens.length) {
@@ -219,11 +205,9 @@ class BufferedTokenSource implements TokenSource {
     return _filterForChannel(from, to, channel);
   }
 
-  /**
-   * Collect all tokens on specified channel to the left of
-   * the current token up until we see a token on DEFAULT_TOKEN_CHANNEL.
-   * If channel is -1, find any non default channel token.
-   */
+  /// Collect all tokens on specified channel to the left of
+  /// the current token up until we see a token on DEFAULT_TOKEN_CHANNEL.
+  /// If channel is -1, find any non default channel token.
   List<Token> getHiddenTokensToLeft(int tokenIndex, [int channel = -1]) {
     _lazyInit();
     if (tokenIndex < 0 || tokenIndex >= _tokens.length) {
@@ -237,19 +221,17 @@ class BufferedTokenSource implements TokenSource {
     return _filterForChannel(from, to, channel);
   }
 
-  /**
-   * Allowed derived classes to modify the behavior of operations which change
-   * the current source position by adjusting the target token index of a seek
-   * operation. The default implementation simply returns i. If an
-   * exception is thrown in this method, the current source index should not be
-   * changed.
-   *
-   * For example, CommonTokenSource overrides this method to ensure that
-   * the seek target is always an on-channel token.
-   *
-   * [i] is the target token index.
-   * Return the adjusted target token index.
-   */
+  /// Allowed derived classes to modify the behavior of operations which change
+  /// the current source position by adjusting the target token index of a seek
+  /// operation. The default implementation simply returns i. If an
+  /// exception is thrown in this method, the current source index should not be
+  /// changed.
+  ///
+  /// For example, CommonTokenSource overrides this method to ensure that
+  /// the seek target is always an on-channel token.
+  ///
+  /// [i] is the target token index.
+  /// Return the adjusted target token index.
   int adjustSeekIndex(int i) => i;
 
   // Make sure index i in _tokens has a token.

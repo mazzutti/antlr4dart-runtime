@@ -1,15 +1,11 @@
 part of antlr4dart;
 
-/**
- * A set of utility routines useful for all kinds of antlr4dart trees.
- */
+/// A set of utility routines useful for all kinds of antlr4dart trees.
 class Trees {
 
-  /**
-   * Print out a whole tree in LISP form. [getNodeText] is used on the
-   * node payloads to get the text for the nodes. Detect parse trees and
-   * extract data appropriately.
-   */
+  /// Print out a whole tree in LISP form. [getNodeText] is used on the
+  /// node payloads to get the text for the nodes. Detect parse trees and
+  /// extract data appropriately.
   static String toStringTree(Tree t, [dynamic rules]) {
     if (rules is Parser) rules = rules.ruleNames;
     String s = getNodeText(t, rules);
@@ -53,10 +49,8 @@ class Trees {
     return t.payload.toString();
   }
 
-  /**
-   * Return a list of all ancestors of this node.  The first node of
-   * list is the root and the last is the parent of this node.
-   */
+  /// Return a list of all ancestors of this node.  The first node of
+  /// list is the root and the last is the parent of this node.
   static List<Tree> getAncestors(Tree t) {
     if (t.parent == null) return <Tree>[];
     List<Tree> ancestors = new List<Tree>();

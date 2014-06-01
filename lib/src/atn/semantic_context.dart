@@ -1,46 +1,40 @@
 part of antlr4dart;
 
-/**
- * A tree structure used to record the semantic context in which
- * an ATN configuration is valid.  It's either a single predicate,
- * a conjunction `p1 && p2`, or a sum of products `p1 || p2`.
- */
+/// A tree structure used to record the semantic context in which
+/// an ATN configuration is valid.  It's either a single predicate,
+/// a conjunction `p1 && p2`, or a sum of products `p1 || p2`.
 abstract class SemanticContext {
 
   static final SemanticContext NONE = new Predicate();
 
-  /**
-   * For context independent predicates, we evaluate them without a local
-   * context (i.e., null context). That way, we can evaluate them without
-   * having to create proper rule-specific context during prediction (as
-   * opposed to the parser, which creates them naturally). In a practical
-   * sense, this avoids a cast error from [RuleContext] to myruleContext.
-   *
-   * For context dependent predicates, we must pass in a local context so that
-   * references such as `$arg` evaluate properly as `_localctx.arg`. We only
-   * capture context dependent predicates in the context in which we begin
-   * prediction, so we passed in the outer context here in case of context
-   * dependent predicate evaluation.
-   */
+  /// For context independent predicates, we evaluate them without a local
+  /// context (i.e., null context). That way, we can evaluate them without
+  /// having to create proper rule-specific context during prediction (as
+  /// opposed to the parser, which creates them naturally). In a practical
+  /// sense, this avoids a cast error from [RuleContext] to myruleContext.
+  ///
+  /// For context dependent predicates, we must pass in a local context so that
+  /// references such as `$arg` evaluate properly as `_localctx.arg`. We only
+  /// capture context dependent predicates in the context in which we begin
+  /// prediction, so we passed in the outer context here in case of context
+  /// dependent predicate evaluation.
   bool eval(Recognizer parser, RuleContext outerContext);
 
-  /**
-   * Evaluate the precedence predicates for the context and reduce the result.
-   *
-   * [parser] is the parser instance.
-   * [outerContext] is the current parser context object.
-   * Return the simplified semantic context after precedence predicates are
-   * evaluated, which will be one of the following values.
-   *
-   * * [SemanticContext.NONE]: if the predicate simplifies to `true` after precedence predicates
-   *   are evaluated.
-   * * `null`: if the predicate simplifies to `false` after precedence predicates
-   *   are evaluated.
-   * * `this`: if the semantic context is not changed as a result of precedence
-   *   predicate evaluation.
-   * * A non-`null` [SemanticContext]: the new simplified semantic context after
-   *   precedence predicates are evaluated.
-   */
+  /// Evaluate the precedence predicates for the context and reduce the result.
+  ///
+  /// [parser] is the parser instance.
+  /// [outerContext] is the current parser context object.
+  /// Return the simplified semantic context after precedence predicates are
+  /// evaluated, which will be one of the following values.
+  ///
+  /// * [SemanticContext.NONE]: if the predicate simplifies to `true` after precedence predicates
+  ///   are evaluated.
+  /// * `null`: if the predicate simplifies to `false` after precedence predicates
+  ///   are evaluated.
+  /// * `this`: if the semantic context is not changed as a result of precedence
+  ///   predicate evaluation.
+  /// * A non-`null` [SemanticContext]: the new simplified semantic context after
+  ///   precedence predicates are evaluated.
   SemanticContext evalPrecedence(Recognizer parser, RuleContext outerContext) {
     return this;
   }
@@ -55,9 +49,7 @@ abstract class SemanticContext {
     return result;
   }
 
-  /**
-   *  See [ParserATNSimulator.predsForAmbigAlts]
-   */
+  ///  See [ParserATNSimulator.predsForAmbigAlts]
   static SemanticContext or(SemanticContext a, SemanticContext b) {
     if (a == null) return b;
     if (b == null) return a;

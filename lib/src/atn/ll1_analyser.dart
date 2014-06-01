@@ -2,26 +2,22 @@ part of antlr4dart;
 
 class Ll1Analyzer {
 
-  /**
-   * Special value added to the lookahead sets to indicate that we hit
-   *  a predicate during analysis if `seeThruPreds == false`.
-   */
+  /// Special value added to the lookahead sets to indicate that we hit
+  ///  a predicate during analysis if `seeThruPreds == false`.
   static const int HIT_PRED = Token.INVALID_TYPE;
 
   final Atn atn;
 
   Ll1Analyzer(this.atn);
 
-  /**
-   * Calculates the SLL(1) expected lookahead set for each outgoing transition
-   * of an [AtnState]. The returned array has one element for each outgoing
-   * transition in `s`. If the closure from transition **i** leads to a semantic
-   * predicate before matching a symbol, the element at index **i** of the result
-   * will be `null`.
-   *
-   * [s] is the ATN state.
-   * Return the expected symbols for each outgoing transition of `s`.
-   */
+  /// Calculates the SLL(1) expected lookahead set for each outgoing transition
+  /// of an [AtnState]. The returned array has one element for each outgoing
+  /// transition in `s`. If the closure from transition **i** leads to a semantic
+  /// predicate before matching a symbol, the element at index **i** of the result
+  /// will be `null`.
+  ///
+  /// [s] is the ATN state.
+  /// Return the expected symbols for each outgoing transition of `s`.
   List<IntervalSet> getDecisionLookahead(AtnState s) {
     if (s == null) return null;
     List<IntervalSet> look = new List<IntervalSet>(s.numberOfTransitions);
@@ -40,24 +36,22 @@ class Ll1Analyzer {
     return look;
   }
 
-  /**
-   * Compute set of tokens that can follow `s` in the ATN in the
-   * specified `ctx`.
-   *
-   * If `ctx` is `null` and the end of the rule containing `s` is reached,
-   * [Token.EPSILON] is added to the result set.
-   * If `ctx` is not `null` and the end of the outermost rule is reached,
-   * [Token.EOF] is added to the result set.
-   *
-   * [s] is the ATN state
-   * [stopState] is the ATN state to stop at. This can be a [BlockEndState] to
-   * detect epsilon paths through a closure.
-   * [ctx] is the complete parser context, or `null` if the context
-   * should be ignored
-   *
-   * Return the set of tokens that can follow `s` in the ATN in the
-   * specified `ctx`.
-   */
+  /// Compute set of tokens that can follow `s` in the ATN in the
+  /// specified `ctx`.
+  ///
+  /// If `ctx` is `null` and the end of the rule containing `s` is reached,
+  /// [Token.EPSILON] is added to the result set.
+  /// If `ctx` is not `null` and the end of the outermost rule is reached,
+  /// [Token.EOF] is added to the result set.
+  ///
+  /// [s] is the ATN state
+  /// [stopState] is the ATN state to stop at. This can be a [BlockEndState] to
+  /// detect epsilon paths through a closure.
+  /// [ctx] is the complete parser context, or `null` if the context
+  /// should be ignored
+  ///
+  /// Return the set of tokens that can follow `s` in the ATN in the
+  /// specified `ctx`.
     IntervalSet look(AtnState s, RuleContext ctx, [AtnState stopState]) {
       IntervalSet r = new IntervalSet();
       bool seeThruPreds = true; // ignore preds; get all lookahead
@@ -66,34 +60,32 @@ class Ll1Analyzer {
       return r;
     }
 
-  /**
-   * Compute set of tokens that can follow `s` in the ATN in the
-   * specified `ctx`.
-   *
-   * If `ctx` is `null` and `stopState` or the end of the
-   * rule containing `s` is reached, [Token.EPSILON] is added to
-   * the result set. If `ctx` is not `null` and `addEof` is
-   * `true` and `stopState` or the end of the outermost rule is
-   * reached, [Token.EOF] is added to the result set.
-   *
-   * [s] is the ATN state.
-   * [stopState] is the ATN state to stop at. This can be a [BlockEndState] to
-   * detect epsilon paths through a closure.
-   * [ctx] is the outer context, or `null` if the outer context should
-   * not be used.
-   * [look] is the result lookahead set.
-   * [lookBusy] is a set used for preventing epsilon closures in the ATN
-   * from causing a stack overflow. Outside code should pass `new HashSet<AtnConfig>`
-   *  for this argument.
-   * [calledRuleStack] is A set used for preventing left recursion in the
-   * ATN from causing a stack overflow. Outside code should pass `new BitSet()` for
-   * this argument.
-   * [seeThruPreds] is `true` to true semantic predicates as implicitly `true` and
-   * "see through them", otherwise `false` to treat semantic predicates as opaque
-   * and add [HIT_PRED] to the result if one is encountered.
-   * [addEof] tells to add [Token.EOF] to the result if the end of the outermost
-   * context is reached. This parameter has no effect if `ctx` is `null`.
-   */
+  /// Compute set of tokens that can follow `s` in the ATN in the
+  /// specified `ctx`.
+  ///
+  /// If `ctx` is `null` and `stopState` or the end of the
+  /// rule containing `s` is reached, [Token.EPSILON] is added to
+  /// the result set. If `ctx` is not `null` and `addEof` is
+  /// `true` and `stopState` or the end of the outermost rule is
+  /// reached, [Token.EOF] is added to the result set.
+  ///
+  /// [s] is the ATN state.
+  /// [stopState] is the ATN state to stop at. This can be a [BlockEndState] to
+  /// detect epsilon paths through a closure.
+  /// [ctx] is the outer context, or `null` if the outer context should
+  /// not be used.
+  /// [look] is the result lookahead set.
+  /// [lookBusy] is a set used for preventing epsilon closures in the ATN
+  /// from causing a stack overflow. Outside code should pass `new HashSet<AtnConfig>`
+  ///  for this argument.
+  /// [calledRuleStack] is A set used for preventing left recursion in the
+  /// ATN from causing a stack overflow. Outside code should pass `new BitSet()` for
+  /// this argument.
+  /// [seeThruPreds] is `true` to true semantic predicates as implicitly `true` and
+  /// "see through them", otherwise `false` to treat semantic predicates as opaque
+  /// and add [HIT_PRED] to the result if one is encountered.
+  /// [addEof] tells to add [Token.EOF] to the result if the end of the outermost
+  /// context is reached. This parameter has no effect if `ctx` is `null`.
    void _look(AtnState s,
               AtnState stopState,
               PredictionContext ctx,

@@ -1,18 +1,16 @@
 part of antlr4dart;
 
-/**
- *  An ATN transition between any two ATN states.  Subclasses define
- *  atom, set, epsilon, action, predicate, rule transitions.
- *
- *  This is a one way link. It emanates from a state (usually via a list of
- *  transitions) and has a target state.
- *
- *  Since we never have to change the ATN transitions once we construct it,
- *  we can fix these transitions as specific classes. The DFA transitions
- *  on the other hand need to update the labels as it adds transitions to
- *  the states. We'll use the term Edge for the DFA to distinguish them from
- *  ATN transitions.
- */
+///  An ATN transition between any two ATN states.  Subclasses define
+///  atom, set, epsilon, action, predicate, rule transitions.
+///
+///  This is a one way link. It emanates from a state (usually via a list of
+///  transitions) and has a target state.
+///
+///  Since we never have to change the ATN transitions once we construct it,
+///  we can fix these transitions as specific classes. The DFA transitions
+///  on the other hand need to update the labels as it adds transitions to
+///  the states. We'll use the term Edge for the DFA to distinguish them from
+///  ATN transitions.
 abstract class Transition {
   // constants for serialization
   static const int EPSILON = 1;
@@ -56,9 +54,7 @@ abstract class Transition {
       PrecedencePredicateTransition: PRECEDENCE
     };
 
-  /**
-   * The target of this transition.
-   */
+  /// The target of this transition.
   AtnState target;
 
   Transition._internal(this.target) {
@@ -69,9 +65,7 @@ abstract class Transition {
 
   int get serializationType;
 
-  /**
-   * Are we epsilon, action, sempred?
-   */
+  /// Are we epsilon, action, sempred?
   bool get isEpsilon => false;
 
   IntervalSet get label => null;

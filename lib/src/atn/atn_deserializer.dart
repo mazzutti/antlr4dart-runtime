@@ -308,13 +308,11 @@ class AtnDeserializer {
     return atn;
   }
 
-  /**
-   * Analyze the {@link StarLoopEntryState} states in the specified ATN to set
-   * the {@link StarLoopEntryState#precedenceRuleDecision} field to the
-   * correct value.
-   *
-   * @param atn The ATN.
-   */
+  /// Analyze the [StarLoopEntryState] states in the specified ATN to set
+  /// the [StarLoopEntryState.precedenceRuleDecision] field to the
+  /// correct value.
+  ///
+  /// [atn] is the ATN.
   void _markPrecedenceDecisions(Atn atn) {
     for (AtnState state in atn.states) {
       if (state is! StarLoopEntryState) continue;

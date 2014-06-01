@@ -1,8 +1,6 @@
 part of antlr4dart;
 
-/**
- * A transition containing a set of values.
- */
+/// A transition containing a set of values.
 class SetTransition extends Transition {
   final IntervalSet set;
 

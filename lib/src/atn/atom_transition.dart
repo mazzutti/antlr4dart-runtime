@@ -1,9 +1,7 @@
 part of antlr4dart;
 
 class AtomTransition extends Transition {
-  /**
-   * The token type or character value; or, signifies special label.
-   */
+  /// The token type or character value; or, signifies special label.
   final int especialLabel;
 
   AtomTransition(AtnState target, this.especialLabel) : super._internal(target);

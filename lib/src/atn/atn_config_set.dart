@@ -1,10 +1,8 @@
 part of antlr4dart;
 
-/**
- * Specialized [Set]`<`[AtnConfig]`>` that can track info about the set,
- * with support for combining similar configurations using a
- * graph-structured stack.
- */
+/// Specialized [Set]`<`[AtnConfig]`>` that can track info about the set,
+/// with support for combining similar configurations using a
+/// graph-structured stack.
 class AtnConfigSet {
 
   // Indicates that the set of configurations is read-only. Do not
@@ -17,29 +15,26 @@ class AtnConfigSet {
   int _cachedHashCode = -1;
   BitSet _conflictingAlts;
 
-  /**
-   * All configs but hashed by (s, i, _, pi) not including context. Wiped out
-   * when we go readonly as this set becomes a DFA state.
-   */
+  /// All configs but hashed by (s, i, _, pi) not including context. Wiped out
+  /// when we go readonly as this set becomes a DFA state.
   HashSet configLookup;
 
-  /**
-   * Track the elements as they are added to the set; supports `operator[](i)`.
-   */
+  /// Track the elements as they are added to the set; supports `operator[](i)`.
   final List<AtnConfig> configs = new List<AtnConfig>();
 
   int uniqueAlt = 0;
 
-  // Used in parser and lexer. In lexer, it indicates we hit a pred
-  // while computing a closure operation.  Don't make a DFA state from this.
+  /// Used in parser and lexer.
+  ///
+  /// In lexer, it indicates we hit a pred while computing a closure operation.
+  /// Don't make a DFA state from this.
   bool hasSemanticContext = false;
+
   bool dipsIntoOuterContext = false;
 
-  /**
-   * Indicates that this configuration set is part of a full context
-   * LL prediction. It will be used to determine how to merge $. With SLL
-   * it's a wildcard whereas it is not for LL context merge.
-   */
+  /// Indicates that this configuration set is part of a full context
+  /// LL prediction. It will be used to determine how to merge $. With SLL
+  /// it's a wildcard whereas it is not for LL context merge.
   final bool fullCtx;
 
   AtnConfigSet([this.fullCtx = true]) {
@@ -55,14 +50,12 @@ class AtnConfigSet {
     dipsIntoOuterContext = old.dipsIntoOuterContext;
   }
 
-  /**
-   * Adding a new config means merging contexts with existing configs for
-   * `(s, i, pi, _)`, where `s` is the [AtnConfig.state], `i` is the
-   * [AtnConfig.alt], and `pi` is the [AtnConfig.semanticContext].
-   *
-   * This method updates [dipsIntoOuterContext] and [hasSemanticContext]
-   * when necessary.
-   */
+  /// Adding a new config means merging contexts with existing configs for
+  /// `(s, i, pi, _)`, where `s` is the [AtnConfig.state], `i` is the
+  /// [AtnConfig.alt], and `pi` is the [AtnConfig.semanticContext].
+  ///
+  /// This method updates [dipsIntoOuterContext] and [hasSemanticContext]
+  /// when necessary.
   bool add(AtnConfig config, [DoubleKeyMap<PredictionContext, PredictionContext, PredictionContext> mergeCache]) {
     if (_readonly) throw new StateError("This set is readonly");
     if (config.semanticContext != SemanticContext.NONE) {
@@ -89,9 +82,7 @@ class AtnConfigSet {
     return true;
   }
 
-  /**
-   * Return a List holding list of configs.
-   */
+  /// Return a List holding list of configs.
   List<AtnConfig> get elements => configs;
 
   Set<AtnState> get states => new Set<AtnState>.from(configs.map((s) => s.state));

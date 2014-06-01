@@ -1,12 +1,9 @@
 part of antlr4dart;
 
-
-/**
- * A semantic predicate failed during validation.  Validation of predicates
- * occurs when normally parsing the alternative just like matching a token.
- * Disambiguating predicate evaluation occurs when we test a predicate during
- * prediction.
- */
+/// A semantic predicate failed during validation.  Validation of predicates
+/// occurs when normally parsing the alternative just like matching a token.
+/// Disambiguating predicate evaluation occurs when we test a predicate during
+/// prediction.
 class FailedPredicateException extends RecognitionException {
   int _ruleIndex;
   int _predicateIndex;
@@ -33,6 +30,7 @@ class FailedPredicateException extends RecognitionException {
   }
 
   int get ruleIndex => _ruleIndex;
+
   int get predicateIndex => _predicateIndex;
 
   static String _formatMessage(String predicate, String message) {

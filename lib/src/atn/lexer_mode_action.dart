@@ -1,35 +1,23 @@
 part of antlr4dart;
 
-/**
- * Implements the `mode` lexer action by calling [Lexer.mode] with
- * the assigned mode.
- */
+/// Implements the `mode` lexer action by calling [Lexer.mode] with
+/// the assigned mode.
 class LexerModeAction implements LexerAction {
-  /**
-   * The lexer mode this action should transition the lexer to.
-   */
+  /// The lexer mode this action should transition the lexer to.
   final int mode;
 
-  /**
-   * Constructs a new `mode` action with the specified mode value.
-   * [mode] is the mode value to pass to [Lexer.mode].
-   */
+  /// Constructs a new `mode` action with the specified mode value.
+  /// [mode] is the mode value to pass to [Lexer.mode].
   LexerModeAction(this.mode);
 
-  /**
-   * Return the [LexerActionType.MODE].
-   */
+  /// Return the [LexerActionType.MODE].
   LexerActionType get actionType => LexerActionType.MODE;
 
-  /**
-   * Allways return This method returns `false`.
-   */
+  /// Allways return This method returns `false`.
   bool get isPositionDependent => false;
 
-  /**
-   * This action is implemented by calling [Lexer.mode] with the
-   * value provided by [mode].
-   */
+  /// This action is implemented by calling [Lexer.mode] with the
+  /// value provided by [mode].
   void execute(Lexer lexer) {
     lexer.mode = mode;
   }

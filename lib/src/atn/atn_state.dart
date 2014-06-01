@@ -36,9 +36,7 @@ abstract class AtnState {
 
   static const int INVALID_STATE_NUMBER = -1;
 
-  /**
-   * Which ATN are we in?
-   */
+  /// Which ATN are we in?
   Atn atn = null;
 
   int stateNumber = INVALID_STATE_NUMBER;
@@ -47,14 +45,10 @@ abstract class AtnState {
 
   bool epsilonOnlyTransitions = false;
 
-  /**
-   * Track the transitions emanating from this ATN state.
-   */
+  /// Track the transitions emanating from this ATN state.
   final List<Transition> _transitions = new List<Transition>();
 
-  /**
-   * Used to cache lookahead during parsing, not used during construction
-   */
+  /// Used to cache lookahead during parsing, not used during construction
   IntervalSet nextTokenWithinRule;
 
   int get hashCode => stateNumber;

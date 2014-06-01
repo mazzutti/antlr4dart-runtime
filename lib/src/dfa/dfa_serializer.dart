@@ -1,8 +1,6 @@
 part of antlr4dart;
 
-/**
- * A DFA walker that knows how to dump them to serialized strings.
- */
+/// A DFA walker that knows how to dump them to serialized strings.
 class DfaSerializer {
   final Dfa dfa;
   final List<String> tokenNames;

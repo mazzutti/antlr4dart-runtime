@@ -1,8 +1,6 @@
 part of antlr4dart;
 
-/**
- * "dup" of ParserInterpreter
- */
+/// "dup" of ParserInterpreter
 class LexerAtnSimulator extends AtnSimulator {
   static bool _debug = false;
   static bool _dfa_debug = false;
@@ -23,14 +21,10 @@ class LexerAtnSimulator extends AtnSimulator {
   // Used during DFA/ATN exec to record the most recent accept configuration info.
   final _SimState _prevAccept = new _SimState();
 
-  /*
-   * Line number 1..n within the input.
-   */
+  /// Line number 1..n within the input.
   int line = 1;
 
-  /*
-   * The index of the character relative to the beginning of the line 0..n-1.
-   */
+  /// The index of the character relative to the beginning of the line 0..n-1.
   int charPositionInLine = 0;
 
   final List<Dfa> decisionToDfa;
@@ -77,9 +71,7 @@ class LexerAtnSimulator extends AtnSimulator {
 
   Dfa getDfa(int mode) => decisionToDfa[mode];
 
-  /**
-   * Get the text matched so far for the current token.
-   */
+  /// Get the text matched so far for the current token.
   String getText(CharSource input) {
     // index is first lookahead char, don't include.
     return input.getText(Interval.of(_startIndex, input.index - 1));

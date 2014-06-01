@@ -8,10 +8,8 @@ class CommonTokenFactory {
   // source is unbuffered.
   final bool _copyText;
 
-  /**
-   * Create factory and indicate whether or not the factory copy
-   * text out of the char source.
-   */
+  /// Create factory and indicate whether or not the factory copy
+  /// text out of the char source.
   CommonTokenFactory([this._copyText = false]);
 
   CommonToken call(Pair<TokenProvider, CharSource> source,

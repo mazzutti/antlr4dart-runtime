@@ -1,34 +1,28 @@
 part of antlr4dart;
 
-/**
- * A rule invocation record for parsing.
- *
- * Contains all of the information about the current rule not stored
- * in the [RuleContext]. It handles parse tree children list, Any ATN
- * state tracing, and the default values available for rule indications:
- * start, stop, rule index, current alt number, current ATN state.
- *
- * Subclasses made for each rule and grammar track the parameters,
- * return values, locals, and labels specific to that rule. These
- * are the objects that are returned from rules.
- *
- */
+/// A rule invocation record for parsing.
+///
+/// Contains all of the information about the current rule not stored
+/// in the [RuleContext]. It handles parse tree children list, Any ATN
+/// state tracing, and the default values available for rule indications:
+/// start, stop, rule index, current alt number, current ATN state.
+///
+/// Subclasses made for each rule and grammar track the parameters,
+/// return values, locals, and labels specific to that rule. These
+/// are the objects that are returned from rules.
+///
 class ParserRuleContext extends RuleContext {
-  /**
-   * If we are debugging or building a parse tree for a visitor,
-   * we need to track all of the tokens and rule invocations associated
-   * with this rule's context. This is empty for parsing w/o tree constr.
-   * operation because we don't the need to track the details about
-   * how we parse this rule.
-   */
+  /// If we are debugging or building a parse tree for a visitor,
+  /// we need to track all of the tokens and rule invocations associated
+  /// with this rule's context. This is empty for parsing w/o tree constr.
+  /// operation because we don't the need to track the details about
+  /// how we parse this rule.
   List<ParseTree> children;
 
   Token start, stop;
 
-  /**
-   * The exception which forced this rule to return. If the rule
-   * successfully completed, this is `null`.
-   */
+  /// The exception which forced this rule to return. If the rule
+  /// successfully completed, this is `null`.
   RecognitionException exception;
 
   ParserRuleContext([ParserRuleContext parent, int invokingStateNumber])
@@ -48,18 +42,14 @@ class ParserRuleContext extends RuleContext {
     return Interval.of(start.tokenIndex, stop.tokenIndex);
   }
 
-  /**
-   * Override to make type more specific.
-   */
+  /// Override to make type more specific.
   ParserRuleContext get parent => super.parent;
 
   void enterRule(ParseTreeListener listener) {}
 
   void exitRule(ParseTreeListener listener) {}
 
-  /**
-   * Does not set parent link; other add methods do that.
-   */
+  /// Does not set parent link; other add methods do that.
   dynamic addChild(dynamic child) {
     if (child is Token) {
       child = new TerminalNode(child);
@@ -71,11 +61,9 @@ class ParserRuleContext extends RuleContext {
     return child;
   }
 
-  /**
-   * Used by `enterOuterAlt` to toss out a RuleContext previously
-   * added as we entered a rule. If we have # label, we will need
-   * to remove generic ruleContext object.
-   */
+  /// Used by `enterOuterAlt` to toss out a RuleContext previously
+  /// added as we entered a rule. If we have # label, we will need
+  /// to remove generic ruleContext object.
   void removeLastChild() {
     if (children != null ) {
       children.removeLast();
@@ -94,13 +82,13 @@ class ParserRuleContext extends RuleContext {
         && i < children.length ? children[i] : null;
   }
 
-  dynamic getChildAt(Type ctxType, int i) {
+  dynamic getChildAt(Function isInstanceOf, int i) {
     if ( children==null || i < 0 || i >= children.length) {
       return null;
     }
     int j = -1; // what element have we found with ctxType?
     for (ParseTree o in children) {
-      if (implements(o, ctxType)) {
+      if (isInstanceOf(o)) {
         j++;
         if (j == i) return o;
       }
@@ -143,15 +131,15 @@ class ParserRuleContext extends RuleContext {
     return tokens;
   }
 
-  dynamic getRuleContext(Type ctxType, int i) {
-    return getChildAt(ctxType, i);
+  dynamic getRuleContext(Function isInstanceOf, int i) {
+    return getChildAt(isInstanceOf, i);
   }
 
-  List getRuleContexts(Type ctxType) {
+  List getRuleContexts(Function isInstanceOf) {
     if (children == null) return [];
     List contexts = null;
     for (ParseTree o in children) {
-      if (implements(o, ctxType)) {
+      if (isInstanceOf(o)) {
         if (contexts == null) {
           contexts = new List();
         }
@@ -162,10 +150,8 @@ class ParserRuleContext extends RuleContext {
     return contexts;
   }
 
-  /**
-   * Used for rule context info debugging during parse-time,
-   * not so much for ATN debugging.
-   */
+  /// Used for rule context info debugging during parse-time,
+  /// not so much for ATN debugging.
   String toInfoString(Parser recognizer) {
     List<String> rules = recognizer.getRuleInvocationStack(this);
     rules = rules.reversed;

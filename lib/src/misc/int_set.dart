@@ -1,14 +1,10 @@
 part of antlr4dart;
 
-/**
- * A generic set of ints.
- */
+/// A generic set of ints.
 abstract class IntSet {
 
-  /**
-   *  Return the size of this set (not the underlying implementation's
-   *  allocated memory size, for example).
-   */
+  ///  Return the size of this set (not the underlying implementation's
+  ///  allocated memory size, for example).
   int get length;
 
   bool get isNil;
@@ -17,21 +13,15 @@ abstract class IntSet {
 
   int get singleElement;
 
-  /**
-   *  Add an element to the set
-   */
+  ///  Add an element to the set
   void addSingle(int el);
 
-  /**
-   *  Add all elements from incoming set to this set.  Can limit
-   *  to set of its own type. Return "this" so we can chain calls.
-   */
+  ///  Add all elements from incoming set to this set.  Can limit
+  ///  to set of its own type. Return "this" so we can chain calls.
   IntSet addAll(IntSet set);
 
-  /**
-   *  Return the intersection of this set with the argument, creating
-   *  a new set.
-   */
+  ///  Return the intersection of this set with the argument, creating
+  ///  a new set.
   IntSet and(IntSet a);
 
   IntSet complement(IntSet elements);
@@ -42,9 +32,7 @@ abstract class IntSet {
 
   bool contains(int el);
 
-  /**
-   * Remove this element from this set
-   */
+  /// Remove this element from this set
   void remove(int el);
 
   List<int> toList();

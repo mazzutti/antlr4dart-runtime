@@ -1,35 +1,29 @@
 part of antlr4dart;
 
-/**
- *  A set of integers that relies on ranges being common to do
- *  "run-length-encoded" like compression (if you view an [IntSet] like
- *  a [BitSet] with runs of 0s and 1s).  Only ranges are recorded so that
- *  a few ints up near value 1000 don't cause massive bitsets, just two
- *  integer intervals.
- *
- *  element values may be negative.  Useful for sets of EPSILON and EOF.
- *
- *  0..9 char range is index pair ['\u0030','\u0039'].
- *  Multiple ranges are encoded with multiple index pairs.  Isolated
- *  elements are encoded with an index pair where both intervals are the same.
- *
- *  The ranges are ordered and disjoint so that 2..6 appears before 101..103.
- */
+///  A set of integers that relies on ranges being common to do
+///  "run-length-encoded" like compression (if you view an [IntSet] like
+///  a [BitSet] with runs of 0s and 1s).  Only ranges are recorded so that
+///  a few ints up near value 1000 don't cause massive bitsets, just two
+///  integer intervals.
+///
+///  element values may be negative.  Useful for sets of EPSILON and EOF.
+///
+///  0..9 char range is index pair ['\u0030','\u0039'].
+///  Multiple ranges are encoded with multiple index pairs.  Isolated
+///  elements are encoded with an index pair where both intervals are the same.
+///
+///  The ranges are ordered and disjoint so that 2..6 appears before 101..103.
 class IntervalSet implements IntSet {
 
   static final IntervalSet COMPLETE_CHAR_SET = IntervalSet.of(0, Lexer.MAX_CHAR_VALUE);
   static final IntervalSet EMPTY_SET = new IntervalSet();
 
-  /**
-   * Create a set with a single element, `el`.
-   * `el` could be an int or a single character string.
-   */
+  /// Create a set with a single element, `el`.
+  /// `el` could be an int or a single character string.
   static IntervalSet ofSingle(dynamic a) => new IntervalSet([a]);
 
-  /**
-   * Create a set with all ints within range `[a..b]` (inclusive).
-   * `a` and `b` could be ints or sigle character strings.
-   */
+  /// Create a set with all ints within range `[a..b]` (inclusive).
+  /// `a` and `b` could be ints or sigle character strings.
   static IntervalSet of(dynamic a, dynamic b) {
     if (a is String) a = a.codeUnitAt(0);
     if (b is String) b = b.codeUnitAt(0);
@@ -38,18 +32,14 @@ class IntervalSet implements IntSet {
     return s;
   }
 
-  /**
-   * Combine all sets in the list returned the or'd value.
-   */
+  /// Combine all sets in the list returned the or'd value.
   static IntervalSet combine(List<IntervalSet> sets) {
     IntervalSet r = new IntervalSet();
     sets.forEach((s) => r.addAll(s));
     return r;
   }
 
-  /**
-   * The list of sorted, disjoint intervals.
-   */
+  /// The list of sorted, disjoint intervals.
   List<Interval> _intervals;
 
   bool isReadonly = false;
@@ -84,15 +74,11 @@ class IntervalSet implements IntSet {
     return n;
   }
 
-  /**
-   * return true if this set has no members
-   */
+  /// return true if this set has no members
   bool get isNil => _intervals.isEmpty;
 
-  /**
-   *  If this set is a single int, return
-   *  it otherwise Token.INVALID_TYPE.
-   */
+  ///  If this set is a single int, return
+  ///  it otherwise Token.INVALID_TYPE.
   int get singleElement {
     if (_intervals.length == 1) {
       Interval i = _intervals.first;
@@ -106,9 +92,7 @@ class IntervalSet implements IntSet {
     return _intervals.last.b;
   }
 
-  /**
-   *  Return minimum element >= 0
-   */
+  ///  Return minimum element >= 0
   int get minElement {
     if (isNil) return Token.INVALID_TYPE;
     int n = _intervals.length;
@@ -122,9 +106,7 @@ class IntervalSet implements IntSet {
     return Token.INVALID_TYPE;
   }
 
-  /**
-   * Return a list of Interval objects.
-   */
+  /// Return a list of Interval objects.
   List<Interval> get intervals => _intervals;
 
   int get hashCode {
@@ -137,9 +119,7 @@ class IntervalSet implements IntSet {
     return hash;
   }
 
-  /**
-   *  Are two IntervalSets equal?
-   */
+  ///  Are two IntervalSets equal?
   bool operator==(Object obj) {
     if (obj is IntervalSet) {
       if (_intervals.length == obj._intervals.length) {
@@ -156,25 +136,21 @@ class IntervalSet implements IntSet {
     _intervals.clear();
   }
 
-  /**
-   *  Add a single element to the set.  An isolated element is stored
-   *  as a range el..el.
-   *  `el` could be an int or a single character string.
-   */
+  ///  Add a single element to the set.  An isolated element is stored
+  ///  as a range el..el.
+  ///  `el` could be an int or a single character string.
   void addSingle(dynamic el) {
     if (isReadonly) throw new StateError("can't alter readonly IntervalSet");
     add(el, el);
   }
 
-  /**
-   *  Add interval; i.e., add all integers from a to b to set.
-   *  If b < a, do nothing.
-   *  Keep list in sorted order (by left range value).
-   *  If overlap, combine ranges.  For example,
-   *  If this is {1..5, 10..20}, adding 6..7 yields
-   *  {1..5, 6..7, 10..20}.  Adding 4..8 yields {1..8, 10..20}.
-   *  `a` and `b` could be ints or single character strings.
-   */
+  ///  Add interval; i.e., add all integers from a to b to set.
+  ///  If b < a, do nothing.
+  ///  Keep list in sorted order (by left range value).
+  ///  If overlap, combine ranges.  For example,
+  ///  If this is {1..5, 10..20}, adding 6..7 yields
+  ///  {1..5, 6..7, 10..20}.  Adding 4..8 yields {1..8, 10..20}.
+  ///  `a` and `b` could be ints or single character strings.
   void add(dynamic a, dynamic b) {
     _add(Interval.of(a, b));
   }
@@ -189,13 +165,11 @@ class IntervalSet implements IntSet {
     return this;
   }
 
-  /**
-   *  Given the set of possible values (rather than, say UNICODE or MAXINT),
-   *  return a new set containing all elements in vocabulary, but not in
-   *  this.  The computation is (vocabulary - this).
-   *
-   *  'this' is assumed to be either a subset or equal to vocabulary.
-   */
+  ///  Given the set of possible values (rather than, say UNICODE or MAXINT),
+  ///  return a new set containing all elements in vocabulary, but not in
+  ///  this.  The computation is (vocabulary - this).
+  ///
+  ///  'this' is assumed to be either a subset or equal to vocabulary.
   IntervalSet complement(IntSet vocabulary) {
     if (vocabulary == null) return null; // nothing in common with null set
     if (vocabulary is! IntervalSet) {
@@ -231,13 +205,11 @@ class IntervalSet implements IntSet {
     return compl;
   }
 
-  /**
-   *  Compute this - other via this & ~other.
-   *
-   *  Return a new set containing all elements in this but not in other.
-   *  other is assumed to be a subset of this;
-   *  anything that is in other but not in this will be ignored.
-   */
+  ///  Compute this - other via this & ~other.
+  ///
+  ///  Return a new set containing all elements in this but not in other.
+  ///  other is assumed to be a subset of this;
+  ///  anything that is in other but not in this will be ignored.
   IntervalSet subtract(IntSet other) {
     // assume the whole unicode range here for the complement
     // because it doesn't matter.  Anything beyond the max of this' set
@@ -255,12 +227,10 @@ class IntervalSet implements IntSet {
     return o;
   }
 
-  /**
-   *  Return a new set with the intersection of this set with other.  Because
-   *  the intervals are sorted, we can use an iterator for each list and
-   *  just walk them together.  This is roughly O(min(n,m)) for interval
-   *  list lengths n and m.
-   */
+  ///  Return a new set with the intersection of this set with other.  Because
+  ///  the intervals are sorted, we can use an iterator for each list and
+  ///  just walk them together.  This is roughly O(min(n,m)) for interval
+  ///  list lengths n and m.
   IntervalSet and(IntSet other) {
     if (other == null) return null; // nothing in common with null set
     List<Interval> theirIntervals = (other as IntervalSet)._intervals;
@@ -311,10 +281,8 @@ class IntervalSet implements IntSet {
     return intersection;
   }
 
-  /**
-   *  Is el in any range of this set?
-   *  `el` could be a int or a single character string.
-   */
+  ///  Is el in any range of this set?
+  ///  `el` could be a int or a single character string.
   bool contains(dynamic el) {
     if (el is String) el = el.codeUnitAt(0);
     int n = _intervals.length;

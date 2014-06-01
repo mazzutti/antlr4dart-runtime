@@ -1,20 +1,18 @@
 part of antlr4dart;
 
-/**
- * The most common source of tokens where every token is buffered up
- * and tokens are filtered for a certain channel (the parser will only
- * see these tokens).
- *
- * Even though it buffers all of the tokens, this token source pulls tokens
- * from the tokens source on demand. In other words, until you ask for a
- * token using consume(), lookToken(), etc. the source does not pull from the lexer.
- *
- * The only difference between this source and [BufferedTokenSource] superclass
- * is that this source knows how to ignore off channel tokens. There may be
- * a performance advantage to using the superclass if you don't pass
- * whitespace and comments etc. to the parser on a hidden channel (i.e.,
- * you set `channel` instead of calling `skip()` in lexer rules.)
- */
+/// The most common source of tokens where every token is buffered up
+/// and tokens are filtered for a certain channel (the parser will only
+/// see these tokens).
+///
+/// Even though it buffers all of the tokens, this token source pulls tokens
+/// from the tokens source on demand. In other words, until you ask for a
+/// token using consume(), lookToken(), etc. the source does not pull from the lexer.
+///
+/// The only difference between this source and [BufferedTokenSource] superclass
+/// is that this source knows how to ignore off channel tokens. There may be
+/// a performance advantage to using the superclass if you don't pass
+/// whitespace and comments etc. to the parser on a hidden channel (i.e.,
+/// you set `channel` instead of calling `skip()` in lexer rules.)
 class CommonTokenSource extends BufferedTokenSource {
 
   // Skip tokens on any channel but this one; this is how we skip whitespace...
@@ -23,9 +21,7 @@ class CommonTokenSource extends BufferedTokenSource {
   CommonTokenSource(TokenProvider tokenProvider,
                     [this._channel = Token.DEFAULT_CHANNEL]) : super(tokenProvider);
 
-  /**
-   * Count EOF just once.
-   */
+  /// Count EOF just once.
   int get numberOfOnChannelTokens {
     int n = 0;
     fill();

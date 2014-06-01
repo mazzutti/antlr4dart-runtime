@@ -1,11 +1,9 @@
 part of antlr4dart;
 
-/**
- * A lexer is recognizer that draws input symbols from a character source.
- * lexer grammars result in a subclass of this object. A Lexer object
- * uses simplified match() and error recovery mechanisms in the interest
- * of speed.
- */
+/// A lexer is recognizer that draws input symbols from a character source.
+/// lexer grammars result in a subclass of this object. A Lexer object
+/// uses simplified match() and error recovery mechanisms in the interest
+/// of speed.
 abstract class Lexer extends Recognizer<int, LexerAtnSimulator> implements TokenProvider {
   static const int _DEFAULT_MODE = 0;
   static const int MORE = -2;
@@ -26,55 +24,39 @@ abstract class Lexer extends Recognizer<int, LexerAtnSimulator> implements Token
   // the input char buffer.
   String _text;
 
-  /*
-   * How to create token objects.
-   */
+  /// How to create token objects.
   TokenFactory tokenFactory = CommonTokenFactory.DEFAULT;
 
   CharSource input;
 
-  /**
-   * The goal of all lexer rules/methods is to create a token object.
-   * This is an instance variable as multiple rules may collaborate to
-   * create a single token.  nextToken will return this object after
-   * matching lexer rule(s).  If you subclass to allow multiple token
-   * emissions, then set this to the last token to be matched or
-   * something nonnull so that the auto token emit mechanism will not
-   * emit another token.
-   */
+  /// The goal of all lexer rules/methods is to create a token object.
+  /// This is an instance variable as multiple rules may collaborate to
+  /// create a single token.  nextToken will return this object after
+  /// matching lexer rule(s).  If you subclass to allow multiple token
+  /// emissions, then set this to the last token to be matched or
+  /// something nonnull so that the auto token emit mechanism will not
+  /// emit another token.
   Token token;
 
-  /**
-   * What character index in the source did the current token start at?
-   * Needed, for example, to get the text for current token.  Set at
-   * the start of nextToken.
-   */
+  /// What character index in the source did the current token start at?
+  /// Needed, for example, to get the text for current token.  Set at
+  /// the start of nextToken.
   int tokenStartCharIndex = -1;
 
-  /**
-   * The line on which the first character of the token resides.
-   */
+  /// The line on which the first character of the token resides.
   int tokenStartLine;
 
-  /**
-   * The character position of first character within the line.
-   */
+  /// The character position of first character within the line.
   int tokenStartCharPositionInLine;
 
-  /**
-   * Once we see EOF on char source, next token will be EOF.
-   * If you have DONE : EOF ; then you see DONE EOF.
-   */
+  /// Once we see EOF on char source, next token will be EOF.
+  /// If you have DONE : EOF ; then you see DONE EOF.
   bool hitEof = false;
 
-  /**
-   * The channel number for the current token.
-   */
+  /// The channel number for the current token.
   int channel;
 
-  /**
-   * The token type for the current token.
-   */
+  /// The token type for the current token.
   int type;
 
   int mode = _DEFAULT_MODE;
@@ -99,9 +81,7 @@ abstract class Lexer extends Recognizer<int, LexerAtnSimulator> implements Token
     interpreter.reset();
   }
 
-  /**
-   * Return a token from this source; i.e., match a token on the char source.
-   */
+  /// Return a token from this source; i.e., match a token on the char source.
   Token nextToken() {
     if (input == null) {
       throw new StateError("nextToken requires a non-null input source.");
@@ -149,13 +129,11 @@ abstract class Lexer extends Recognizer<int, LexerAtnSimulator> implements Token
     }
   }
 
-  /**
-   * Instruct the lexer to skip creating a token for current lexer rule
-   * and look for another token.  nextToken() knows to keep looking when
-   * a lexer rule finishes with token set to SKIP_TOKEN.  Recall that
-   * if token == null at end of any token rule, it creates one for you
-   * and emits it.
-   */
+  /// Instruct the lexer to skip creating a token for current lexer rule
+  /// and look for another token.  nextToken() knows to keep looking when
+  /// a lexer rule finishes with token set to SKIP_TOKEN.  Recall that
+  /// if token == null at end of any token rule, it creates one for you
+  /// and emits it.
   void skip() {
     type = SKIP;
   }
@@ -177,9 +155,7 @@ abstract class Lexer extends Recognizer<int, LexerAtnSimulator> implements Token
     return mode;
   }
 
-  /**
-   * Set the char source and reset the lexer.
-   */
+  /// Set the char source and reset the lexer.
   void set inputSource(IntSource source) {
     input = null;
     _tokenFactorySourcePair = new Pair<TokenProvider, CharSource>(this, input);
@@ -192,23 +168,19 @@ abstract class Lexer extends Recognizer<int, LexerAtnSimulator> implements Token
 
   String get sourceName => input.sourceName;
 
-  /**
-   * By default does not support multiple emits per nextToken invocation
-   * for efficiency reasons.  Subclass and override this method, nextToken,
-   * and getToken (to push tokens into a list and pull from that list
-   * rather than a single variable as this implementation does).
-   */
+  /// By default does not support multiple emits per nextToken invocation
+  /// for efficiency reasons.  Subclass and override this method, nextToken,
+  /// and getToken (to push tokens into a list and pull from that list
+  /// rather than a single variable as this implementation does).
   void emitToken(Token token) {
     this.token = token;
   }
 
-  /**
-   * The standard method called to automatically emit a token at the
-   * outermost lexical rule.  The token object should point into the
-   * char buffer start..stop.  If there is a text override in 'text',
-   * use that to set the token's text.  Override this method to emit
-   * custom Token objects or provide a new factory.
-   */
+  /// The standard method called to automatically emit a token at the
+  /// outermost lexical rule.  The token object should point into the
+  /// char buffer start..stop.  If there is a text override in 'text',
+  /// use that to set the token's text.  Override this method to emit
+  /// custom Token objects or provide a new factory.
   Token emit() {
     Token t = tokenFactory(_tokenFactorySourcePair, type, _text, channel,
         tokenStartCharIndex, charIndex - 1, tokenStartLine, tokenStartCharPositionInLine);
@@ -242,41 +214,31 @@ abstract class Lexer extends Recognizer<int, LexerAtnSimulator> implements Token
     interpreter.charPositionInLine = charPositionInLine;
   }
 
-  /**
-   * What is the index of the current character of lookahead?
-   */
+  /// What is the index of the current character of lookahead?
   int get charIndex => input.index;
 
-  /**
-   * Return the text matched so far for the current token or any
-   * text override.
-   */
+  /// Return the text matched so far for the current token or any
+  /// text override.
   String get text {
     if (_text != null) return _text;
     return interpreter.getText(input);
   }
 
-  /**
-   * Set the complete text of this token; it wipes any previous
-   * changes to the text.
-   */
+  /// Set the complete text of this token; it wipes any previous
+  /// changes to the text.
   void set text(String text) {
     _text = text;
   }
 
   List<String> get modeNames => null;
 
-  /**
-   * Used to print out token names like ID during debugging and
-   * error reporting.  The generated parsers implement a method
-   * that overrides this to point to their List<String> tokenNames.
-   */
+  /// Used to print out token names like ID during debugging and
+  /// error reporting.  The generated parsers implement a method
+  /// that overrides this to point to their List<String> tokenNames.
   List<String> get tokenNames => null;
 
-  /**
-   * Return a list of all Token objects in input char source.
-   * Forces load of all tokens. Does not include EOF token.
-   */
+  /// Return a list of all Token objects in input char source.
+  /// Forces load of all tokens. Does not include EOF token.
   List<Token> get allTokens {
     List<Token> tokens = new List<Token>();
     Token t = nextToken();
@@ -287,12 +249,10 @@ abstract class Lexer extends Recognizer<int, LexerAtnSimulator> implements Token
     return tokens;
   }
 
-  /**
-   * Lexers can normally match any char in it's vocabulary after matching
-   * a token, so do the easy thing and just kill a character and hope
-   * it all works out.  You can instead use the rule invocation stack
-   * to do sophisticated error recovery if you are in a fragment rule.
-   */
+  /// Lexers can normally match any char in it's vocabulary after matching
+  /// a token, so do the easy thing and just kill a character and hope
+  /// it all works out.  You can instead use the rule invocation stack
+  /// to do sophisticated error recovery if you are in a fragment rule.
   void recover(dynamic e) {
     if (e is LexerNoViableAltException) {
       if (input.lookAhead(1) != IntSource.EOF) {

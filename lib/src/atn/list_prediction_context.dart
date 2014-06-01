@@ -1,17 +1,13 @@
 part of antlr4dart;
 
 class ListPredictionContext extends PredictionContext {
-  /**
-   * Parent can be null only if full ctx mode and we make a list
-   * from [PredictionContext.EMPTY] and non-empty. We merge
-   * [PredictionContext.EMPTY] by using null parent and
-   * `returnState == PredictionContext.EMPTY_RETURN_STATE`.
-   */
+  /// Parent can be null only if full ctx mode and we make a list
+  /// from [PredictionContext.EMPTY] and non-empty. We merge
+  /// [PredictionContext.EMPTY] by using null parent and
+  /// `returnState == PredictionContext.EMPTY_RETURN_STATE`.
   final List<PredictionContext> parents;
 
-  /** Sorted for merge, no duplicates; if present,
-   *  [PredictionContext.EMPTY_RETURN_STATE] is always last.
-   */
+  ///  [PredictionContext.EMPTY_RETURN_STATE] is always last.
   final List<int> returnStates;
 
   ListPredictionContext(List<PredictionContext> parents, List<int> returnStates)
