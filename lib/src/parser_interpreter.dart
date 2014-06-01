@@ -55,6 +55,7 @@ class ParserInterpreter extends Parser {
    * Begin parsing at `startRuleIndex`.
    */
   ParserRuleContext parse(int startRuleIndex) {
+    print(startRuleIndex);
     RuleStartState startRuleStartState = atn.ruleToStartState[startRuleIndex];
     InterpreterRuleContext rootContext = new InterpreterRuleContext(null, AtnState.INVALID_STATE_NUMBER, startRuleIndex);
     if (startRuleStartState.isPrecedenceRule) {
