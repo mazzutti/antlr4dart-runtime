@@ -1,10 +1,8 @@
 part of antlr4dart;
 
-/**
- *  Sometimes we need to map a key to a value but key is two pieces of data.
- *  This nested hash table saves creating a single key each time we access
- *  map; avoids mem creation.
- */
+///  Sometimes we need to map a key to a value but key is two pieces of data.
+///  This nested hash table saves creating a single key each time we access
+///  map; avoids mem creation.
 class DoubleKeyMap<Key1, Key2, Value> {
 
   Map<Key1, Map<Key2, Value>> data;
@@ -33,7 +31,7 @@ class DoubleKeyMap<Key1, Key2, Value> {
 
   Map<Key2, Value> operator [](Key1 k1) => data[k1];
 
-  /** Get all values associated with primary key */
+ /// Get all values associated with primary key
   Iterable<Value> values(Key1 k1) {
     Map<Key2, Value> data2 = data[k1];
     if (data2 == null) return null;

@@ -1,50 +1,43 @@
 part of antlr4dart;
 
 abstract class PredictionContext {
-  /**
-   * Represents `$` in local context prediction, which means wildcard.
-   * `*+x = *`.
-   */
+
+  /// Represents `$` in local context prediction, which means wildcard.
+  /// `*+x = *`.
   static final EmptyPredictionContext EMPTY = new EmptyPredictionContext();
 
   static final int _INITIAL_HASH = 1;
 
-  /**
-   * Represents `$` in an array in full context mode, when `$`
-   * doesn't mean wildcard: `$ + x = [$,x]`. Here,
-   * `$ = [EMPTY_RETURN_STATE]`.
-   */
+  /// Represents `$` in an array in full context mode, when `$`
+  /// doesn't mean wildcard: `$ + x = [$,x]`. Here,
+  /// `$ = [EMPTY_RETURN_STATE]`.
   static final int EMPTY_RETURN_STATE = pow(2, 53) - 1;
 
   static int globalNodeCount = 0;
 
   final int id = globalNodeCount++;
 
-  /**
-   * Stores the computed hash code of this [PredictionContext]. The hash
-   * code is computed in parts to match the following reference algorithm.
-   *
-   *
-   *      int _referenceHashCode() {
-   *        int hash = MurmurHash.initialize(INITIAL_HASH);
-   *        for (int i = 0; i < length; i++) {
-   *          hash = MurmurHash.update(hash, getParent(i));
-   *        }
-   *        for (int i = 0; i < length; i++) {
-   *          hash = MurmurHash.update(hash, returnState(i));
-   *        }
-   *        hash = MurmurHash.finish(hash, 2 * length);
-   *        return hash;
-   *      }
-   */
+  /// Stores the computed hash code of this [PredictionContext]. The hash
+  /// code is computed in parts to match the following reference algorithm.
+  ///
+  ///
+  ///      int _referenceHashCode() {
+  ///        int hash = MurmurHash.initialize(INITIAL_HASH);
+  ///        for (int i = 0; i < length; i++) {
+  ///          hash = MurmurHash.update(hash, getParent(i));
+  ///        }
+  ///        for (int i = 0; i < length; i++) {
+  ///          hash = MurmurHash.update(hash, returnState(i));
+  ///        }
+  ///        hash = MurmurHash.finish(hash, 2 * length);
+  ///        return hash;
+  ///      }
   final int cachedHashCode;
 
   PredictionContext._internal(this.cachedHashCode);
 
-  /**
-   * Convert a [RuleContext] tree to a [PredictionContext] graph.
-   * Return [EMPTY] if `outerContext` is empty or null.
-   */
+  /// Convert a [RuleContext] tree to a [PredictionContext] graph.
+  /// Return [EMPTY] if `outerContext` is empty or null.
   static PredictionContext fromRuleContext(Atn atn, RuleContext outerContext) {
     if (outerContext == null) outerContext = RuleContext.EMPTY;
     // if we are in RuleContext of start rule, s, then PredictionContext
@@ -68,9 +61,7 @@ abstract class PredictionContext {
 
   int getReturnState(int index);
 
-  /**
-   * This means only the [EMPTY] context is in set.
-   */
+  /// This means only the [EMPTY] context is in set.
   bool get isEmpty => this == EMPTY;
 
   bool get hasEmptyPath => getReturnState(length - 1) == EMPTY_RETURN_STATE;
@@ -132,14 +123,12 @@ abstract class PredictionContext {
     return mergeLists(a, b, rootIsWildcard, mergeCache);
   }
 
-  /**
-   * Merge two [SingletonPredictionContext] instances.
-   *
-   * [a] is the first [SingletonPredictionContext]
-   * [b] is the second [SingletonPredictionContext]
-   * [rootIsWildcard] is `true` if this is a local-context merge,
-   * otherwise `false` to indicate a full-context merge
-   */
+  /// Merge two [SingletonPredictionContext] instances.
+  ///
+  /// [a] is the first [SingletonPredictionContext]
+  /// [b] is the second [SingletonPredictionContext]
+  /// [rootIsWildcard] is `true` if this is a local-context merge,
+  /// otherwise `false` to indicate a full-context merge
   static PredictionContext mergeSingletons(
         SingletonPredictionContext a,
         SingletonPredictionContext b,
@@ -202,15 +191,13 @@ abstract class PredictionContext {
     }
   }
 
-  /**
-   * Handle case where at least one of `a` or `b` is [EMPTY]. In
-   * the following diagrams, the symbol `$` is used to represent [EMPTY].
-   *
-   * [a] is the first [SingletonPredictionContext]
-   * [b] is the second [SingletonPredictionContext]
-   * [rootIsWildcard] `true` if this is a local-context merge,
-   * otherwise `false` to indicate a full-context merge
-   */
+  /// Handle case where at least one of `a` or `b` is [EMPTY]. In
+  /// the following diagrams, the symbol `$` is used to represent [EMPTY].
+  ///
+  /// [a] is the first [SingletonPredictionContext]
+  /// [b] is the second [SingletonPredictionContext]
+  /// [rootIsWildcard] `true` if this is a local-context merge,
+  /// otherwise `false` to indicate a full-context merge
   static PredictionContext mergeRoot(
                         SingletonPredictionContext a,
                         SingletonPredictionContext b,
@@ -236,9 +223,7 @@ abstract class PredictionContext {
     return null;
   }
 
-  /**
-   * Merge two [ListPredictionContext] instances.
-   */
+  /// Merge two [ListPredictionContext] instances.
   static PredictionContext mergeLists(
         ListPredictionContext a,
         ListPredictionContext b,
@@ -327,9 +312,7 @@ abstract class PredictionContext {
     return M;
   }
 
-  /**
-   * Make pass over all **M** `parents`; merge any `==` ones.
-   */
+  /// Make pass over all **M** `parents`; merge any `==` ones.
   static void _combineCommonParents(List<PredictionContext> parents) {
     var uniqueParents = new HashMap<PredictionContext, PredictionContext>();
     for (int p = 0; p < parents.length; p++) {

@@ -1,131 +1,129 @@
 part of antlr4dart;
 
-/**
- * The embodiment of the adaptive LL(*), ALL(*), parsing strategy.
- *
- * The basic complexity of the adaptive strategy makes it harder to
- * understand. We begin with ATN simulation to build paths in a
- * DFA. Subsequent prediction requests go through the DFA first. If
- * they reach a state without an edge for the current symbol, the
- * algorithm fails over to the ATN simulation to complete the DFA
- * path for the current input (until it finds a conflict state or
- * uniquely predicting state).
- *
- * All of that is done without using the outer context because we
- * want to create a DFA that is not dependent upon the rule
- * invocation stack when we do a prediction.  One DFA works in all
- * contexts. We avoid using context not necessarily because it's
- * slower, although it can be, but because of the DFA caching
- * problem.  The closure routine only considers the rule invocation
- * stack created during prediction beginning in the decision rule.
- * For example, if prediction occurs without invoking another rule's
- * ATN, there are no context stacks in the configurations.
- * When lack of context leads to a conflict, we don't know if it's
- * an ambiguity or a weakness in the strong LL(*) parsing strategy
- * (versus full LL(*)).
- *
- * When SLL yields a configuration set with conflict, we rewind the
- * input and retry the ATN simulation, this time using full outer
- * context without adding to the DFA. Configuration context
- * stacks will be the full invocation stacks from the start rule. If
- * we get a conflict using full context, then we can definitively
- * say we have a true ambiguity for that input sequence. If we don't
- * get a conflict, it implies that the decision is sensitive to the
- * outer context. (It is not context-sensitive in the sense of
- * context-sensitive grammars.)
- *
- * The next time we reach this DFA state with an SLL conflict, through
- * DFA simulation, we will again retry the ATN simulation using full
- * context mode. This is slow because we can't save the results and have
- * to "interpret" the ATN each time we get that input.
- *
- * CACHING FULL CONTEXT PREDICTIONS
- *
- * We could cache results from full context to predicted
- * alternative easily and that saves a lot of time but doesn't work
- * in presence of predicates. The set of visible predicates from
- * the ATN start state changes depending on the context, because
- * closure can fall off the end of a rule. I tried to cache
- * tuples (stack context, semantic context, predicted alt) but it
- * was slower than interpreting and much more complicated. Also
- * required a huge amount of memory. The goal is not to create the
- * world's fastest parser anyway.
- *
- * There is no strict ordering between the amount of input used by
- * SLL vs LL, which makes it really hard to build a cache for full
- * context. Let's say that we have input A B C that leads to an SLL
- * conflict with full context X.  That implies that using X we
- * might only use A B but we could also use A B C D to resolve
- * conflict.  Input A B C D could predict alternative 1 in one
- * position in the input and A B C E could predict alternative 2 in
- * another position in input.  The conflicting SLL configurations
- * could still be non-unique in the full context prediction, which
- * would lead us to requiring more input than the original A B C. To
- * make a prediction cache work, we have to track the exact input used
- * during the previous prediction. That amounts to a cache that maps X
- * to a specific DFA for that context.
- *
- * Something should be done for left-recursive expression predictions.
- * They are likely LL(1) + pred eval. Easier to do the whole SLL unless
- * error and retry with full LL thing Sam does.
- *
- * AVOIDING FULL CONTEXT PREDICTION
- *
- * We avoid doing full context retry when the outer context is empty,
- * we did not dip into the outer context by falling off the end of the
- * decision state rule, or when we force SLL mode.
- *
- * As an example of the not dip into outer context case, consider
- * as super constructor calls versus function calls. One grammar
- * might look like this:
- *
- *      ctorBody : '{' superCall? stat* '}' ;
- *
- * Or, you might see something like:
- *
- *      stat : superCall ';' | expression ';' | ... ;
- *
- * In both cases I believe that no closure operations will dip into the
- * outer context. In the first case ctorBody in the worst case will stop
- * at the '}'. In the 2nd case it should stop at the ';'. Both cases
- * should stay within the entry rule and not dip into the outer context.
- *
- * PREDICATES
- *
- * Predicates are always evaluated if present in either SLL or LL both.
- * SLL and LL simulation deals with predicates differently. SLL collects
- * predicates as it performs closure operations like ANTLR v3 did. It
- * delays predicate evaluation until it reaches and accept state. This
- * allows us to cache the SLL ATN simulation whereas, if we had evaluated
- * predicates on-the-fly during closure, the DFA state configuration sets
- * would be different and we couldn't build up a suitable DFA.
- *
- * When building a DFA accept state during ATN simulation, we evaluate
- * any predicates and return the sole semantically valid alternative. If
- * there is more than 1 alternative, we report an ambiguity. If there are
- * 0 alternatives, we throw an exception. Alternatives without predicates
- * act like they have true predicates. The simple way to think about it
- * is to strip away all alternatives with false predicates and choose the
- * minimum alternative that remains.
- *
- * When we start in the DFA and reach an accept state that's predicated,
- * we test those and return the minimum semantically viable
- * alternative. If no alternatives are viable, we throw an exception.
- *
- * During full LL ATN simulation, closure always evaluates predicates and
- * on-the-fly. This is crucial to reducing the configuration set size
- * during closure. It hits a landmine when parsing with the Dart grammar,
- * for example, without this on-the-fly evaluation.
- *
- * SHARING DFA
- *
- * All instances of the same parser share the same decision DFAs through
- * a static field. Each instance gets its own ATN simulator but they
- * share the same decisionToDFA field. They also share a
- * PredictionContextCache object that makes sure that all
- * PredictionContext objects are shared among the DFA states. This makes
- * a big size difference.
-*/
+/// The embodiment of the adaptive LL(*), ALL(*), parsing strategy.
+///
+/// The basic complexity of the adaptive strategy makes it harder to
+/// understand. We begin with ATN simulation to build paths in a
+/// DFA. Subsequent prediction requests go through the DFA first. If
+/// they reach a state without an edge for the current symbol, the
+/// algorithm fails over to the ATN simulation to complete the DFA
+/// path for the current input (until it finds a conflict state or
+/// uniquely predicting state).
+///
+/// All of that is done without using the outer context because we
+/// want to create a DFA that is not dependent upon the rule
+/// invocation stack when we do a prediction.  One DFA works in all
+/// contexts. We avoid using context not necessarily because it's
+/// slower, although it can be, but because of the DFA caching
+/// problem.  The closure routine only considers the rule invocation
+/// stack created during prediction beginning in the decision rule.
+/// For example, if prediction occurs without invoking another rule's
+/// ATN, there are no context stacks in the configurations.
+/// When lack of context leads to a conflict, we don't know if it's
+/// an ambiguity or a weakness in the strong LL(*) parsing strategy
+/// (versus full LL(*)).
+///
+/// When SLL yields a configuration set with conflict, we rewind the
+/// input and retry the ATN simulation, this time using full outer
+/// context without adding to the DFA. Configuration context
+/// stacks will be the full invocation stacks from the start rule. If
+/// we get a conflict using full context, then we can definitively
+/// say we have a true ambiguity for that input sequence. If we don't
+/// get a conflict, it implies that the decision is sensitive to the
+/// outer context. (It is not context-sensitive in the sense of
+/// context-sensitive grammars.)
+///
+/// The next time we reach this DFA state with an SLL conflict, through
+/// DFA simulation, we will again retry the ATN simulation using full
+/// context mode. This is slow because we can't save the results and have
+/// to "interpret" the ATN each time we get that input.
+///
+/// CACHING FULL CONTEXT PREDICTIONS
+///
+/// We could cache results from full context to predicted
+/// alternative easily and that saves a lot of time but doesn't work
+/// in presence of predicates. The set of visible predicates from
+/// the ATN start state changes depending on the context, because
+/// closure can fall off the end of a rule. I tried to cache
+/// tuples (stack context, semantic context, predicted alt) but it
+/// was slower than interpreting and much more complicated. Also
+/// required a huge amount of memory. The goal is not to create the
+/// world's fastest parser anyway.
+///
+/// There is no strict ordering between the amount of input used by
+/// SLL vs LL, which makes it really hard to build a cache for full
+/// context. Let's say that we have input A B C that leads to an SLL
+/// conflict with full context X.  That implies that using X we
+/// might only use A B but we could also use A B C D to resolve
+/// conflict.  Input A B C D could predict alternative 1 in one
+/// position in the input and A B C E could predict alternative 2 in
+/// another position in input.  The conflicting SLL configurations
+/// could still be non-unique in the full context prediction, which
+/// would lead us to requiring more input than the original A B C. To
+/// make a prediction cache work, we have to track the exact input used
+/// during the previous prediction. That amounts to a cache that maps X
+/// to a specific DFA for that context.
+///
+/// Something should be done for left-recursive expression predictions.
+/// They are likely LL(1) + pred eval. Easier to do the whole SLL unless
+/// error and retry with full LL thing Sam does.
+///
+/// AVOIDING FULL CONTEXT PREDICTION
+///
+/// We avoid doing full context retry when the outer context is empty,
+/// we did not dip into the outer context by falling off the end of the
+/// decision state rule, or when we force SLL mode.
+///
+/// As an example of the not dip into outer context case, consider
+/// as super constructor calls versus function calls. One grammar
+/// might look like this:
+///
+///      ctorBody : '{' superCall? stat* '}' ;
+///
+/// Or, you might see something like:
+///
+///      stat : superCall ';' | expression ';' | ... ;
+///
+/// In both cases I believe that no closure operations will dip into the
+/// outer context. In the first case ctorBody in the worst case will stop
+/// at the '}'. In the 2nd case it should stop at the ';'. Both cases
+/// should stay within the entry rule and not dip into the outer context.
+///
+/// PREDICATES
+///
+/// Predicates are always evaluated if present in either SLL or LL both.
+/// SLL and LL simulation deals with predicates differently. SLL collects
+/// predicates as it performs closure operations like ANTLR v3 did. It
+/// delays predicate evaluation until it reaches and accept state. This
+/// allows us to cache the SLL ATN simulation whereas, if we had evaluated
+/// predicates on-the-fly during closure, the DFA state configuration sets
+/// would be different and we couldn't build up a suitable DFA.
+///
+/// When building a DFA accept state during ATN simulation, we evaluate
+/// any predicates and return the sole semantically valid alternative. If
+/// there is more than 1 alternative, we report an ambiguity. If there are
+/// 0 alternatives, we throw an exception. Alternatives without predicates
+/// act like they have true predicates. The simple way to think about it
+/// is to strip away all alternatives with false predicates and choose the
+/// minimum alternative that remains.
+///
+/// When we start in the DFA and reach an accept state that's predicated,
+/// we test those and return the minimum semantically viable
+/// alternative. If no alternatives are viable, we throw an exception.
+///
+/// During full LL ATN simulation, closure always evaluates predicates and
+/// on-the-fly. This is crucial to reducing the configuration set size
+/// during closure. It hits a landmine when parsing with the Dart grammar,
+/// for example, without this on-the-fly evaluation.
+///
+/// SHARING DFA
+///
+/// All instances of the same parser share the same decision DFAs through
+/// a static field. Each instance gets its own ATN simulator but they
+/// share the same decisionToDFA field. They also share a
+/// PredictionContextCache object that makes sure that all
+/// PredictionContext objects are shared among the DFA states. This makes
+/// a big size difference.
 class ParserAtnSimulator extends AtnSimulator {
 
   static bool _debug = false;
@@ -150,15 +148,14 @@ class ParserAtnSimulator extends AtnSimulator {
   int _startIndex;
   ParserRuleContext _outerContext;
 
-  /**
-   * SLL, LL, or LL + exact ambig detection?
-   */
+  /// SLL, LL, or LL + exact ambig detection?
   PredictionMode predictionMode = PredictionMode.LL;
 
   ParserAtnSimulator(this._parser,
                      Atn atn,
                      this._decisionToDfa,
-                     PredictionContextCache sharedContextCache) : super(atn, sharedContextCache);
+                     PredictionContextCache sharedContextCache)
+      : super(atn, sharedContextCache);
 
   void reset() {}
 
@@ -257,11 +254,9 @@ class ParserAtnSimulator extends AtnSimulator {
     return getTokenName(input.lookAhead(1));
   }
 
-  /**
-   * Used for debugging in adaptivePredict around execAtn but I cut
-   * it out for clarity now that alg. works well. We can leave this
-   * "dead" code for a bit.
-   */
+  /// Used for debugging in adaptivePredict around execAtn but I cut
+  /// it out for clarity now that alg. works well. We can leave this
+  /// "dead" code for a bit.
   void dumpDeadEndConfigs(NoViableAltException nvae) {
     print("dead end configs: ");
     for (AtnConfig c in nvae.deadEndConfigs) {

@@ -8,28 +8,20 @@ class StringSource implements CharSource {
   // 0..n-1 index into string of next char
   int _p = 0;
 
-  /**
-   * Line number 1..n within the input.
-   */
+  /// Line number 1..n within the input.
   int line = 1;
 
-  /**
-   * What is name or source?
-   */
+  /// What is name or source?
   String name;
 
-  /**
-   * Copy data in string to a local int list.
-   */
+  /// Copy data in string to a local int list.
   StringSource(String input) {
     _data = input.codeUnits;
   }
 
-  /**
-   * Reset the source so that it's in the same state it was
-   * when the object was created *except* the data array is not
-   * touched.
-   */
+  /// Reset the source so that it's in the same state it was
+  /// when the object was created *except* the data array is not
+  /// touched.
   void reset() {
     _p = 0;
   }
@@ -54,18 +46,14 @@ class StringSource implements CharSource {
 
   int lookToken(int i) => lookAhead(i);
 
-  /**
-   * Return the current input symbol index 0..n where n indicates the
-   * last symbol has been read.  The index is the index of char to
-   * be returned from lookAhead(1).
-   */
+  /// Return the current input symbol index 0..n where n indicates the
+  /// last symbol has been read.  The index is the index of char to
+  /// be returned from lookAhead(1).
   int get index => _p;
 
   int get length => _data.length;
 
-  /**
-   * mark/release do nothing; we have entire buffer.
-   */
+  /// mark/release do nothing; we have entire buffer.
   int get mark => -1;
 
   void release(int marker) {}

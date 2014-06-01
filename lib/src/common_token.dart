@@ -15,19 +15,13 @@ class CommonToken implements WritableToken {
 
   int channel= Token.DEFAULT_CHANNEL;
 
-  /*
-   * What token number is this from 0..n-1 tokens; < 0 implies invalid index.
-   */
+  /// What token number is this from 0..n-1 tokens; < 0 implies invalid index.
   int tokenIndex = -1;
 
-  /**
-   * The char position into the input buffer where this token starts.
-   */
+  /// The char position into the input buffer where this token starts.
   int startIndex = 0;
 
-  /**
-   * The char position into the input buffer where this token stops.
-   */
+  /// The char position into the input buffer where this token stops.
   int stopIndex = 0;
 
   CommonToken(this._source, this.type, this.channel, this.startIndex, this.stopIndex) {
@@ -74,12 +68,10 @@ class CommonToken implements WritableToken {
     }
   }
 
-  /**
-   * Override the text for this token. getText() will return this text
-   * rather than pulling from the buffer.  Note that this does not mean
-   * that start/stop indexes are not valid.  It means that that input
-   * was converted to a new string in the token object.
-   */
+  /// Override the text for this token. getText() will return this text
+  /// rather than pulling from the buffer.  Note that this does not mean
+  /// that start/stop indexes are not valid.  It means that that input
+  /// was converted to a new string in the token object.
   void set text(String text) {
     _text = text;
   }

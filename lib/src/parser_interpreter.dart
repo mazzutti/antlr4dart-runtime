@@ -1,18 +1,16 @@
 part of antlr4dart;
 
-/**
- * A parser simulator that mimics what ANTLR's generated
- * parser code does. A [ParserAtnSimulator] is used to make
- * predictions via adaptivePredict but this class moves a pointer
- * through the ATN to simulate parsing. ParserAtnSimulator just
- * makes us efficient rather than having to backtrack, for example.
- *
- * This properly creates parse trees even for left recursive rules.
- *
- * We rely on the left recursive rule invocation and special predicate
- * transitions to make left recursive rules work.
- *
- */
+/// A parser simulator that mimics what ANTLR's generated
+/// parser code does. A [ParserAtnSimulator] is used to make
+/// predictions via adaptivePredict but this class moves a pointer
+/// through the ATN to simulate parsing. ParserAtnSimulator just
+/// makes us efficient rather than having to backtrack, for example.
+///
+/// This properly creates parse trees even for left recursive rules.
+///
+/// We rely on the left recursive rule invocation and special predicate
+/// transitions to make left recursive rules work.
+///
 class ParserInterpreter extends Parser {
   final String grammarFileName;
   final Atn atn;
@@ -51,9 +49,7 @@ class ParserInterpreter extends Parser {
     interpreter = new ParserAtnSimulator(this, atn, decisionToDFA, sharedContextCache);
   }
 
-  /**
-   * Begin parsing at `startRuleIndex`.
-   */
+  /// Begin parsing at `startRuleIndex`.
   ParserRuleContext parse(int startRuleIndex) {
     print(startRuleIndex);
     RuleStartState startRuleStartState = atn.ruleToStartState[startRuleIndex];

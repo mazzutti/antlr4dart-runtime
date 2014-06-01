@@ -1,38 +1,28 @@
 part of antlr4dart;
 
-/**
- * A tuple: (ATN state, predicted alt, syntactic, semantic context).
- * The syntactic context is a graph-structured stack node whose
- * path(s) to the root is the rule invocation(s)
- * chain used to arrive at the state.  The semantic context is
- * the tree of semantic predicates encountered before reaching
- * an ATN state.
- */
+/// A tuple: (ATN state, predicted alt, syntactic, semantic context).
+/// The syntactic context is a graph-structured stack node whose
+/// path(s) to the root is the rule invocation(s)
+/// chain used to arrive at the state.  The semantic context is
+/// the tree of semantic predicates encountered before reaching
+/// an ATN state.
 class AtnConfig {
-  /**
-   * The ATN state associated with this configuration
-   * */
+  /// The ATN state associated with this configuration
   final AtnState state;
 
-  /**
-   * What alt (or lexer rule) is predicted by this configuration
-   */
+  /// What alt (or lexer rule) is predicted by this configuration
   final int alt;
 
-  /**
-   * The stack of invoking states leading to the rule/states associated
-   * with this config.  We track only those contexts pushed during
-   * execution of the ATN simulator.
-   */
+  /// The stack of invoking states leading to the rule/states associated
+  /// with this config.  We track only those contexts pushed during
+  /// execution of the ATN simulator.
   PredictionContext context;
 
-  /**
-   * We cannot execute predicates dependent upon local context unless
-   * we know for sure we are in the correct context. Because there is
-   * no way to do this efficiently, we simply cannot evaluate
-   * dependent predicates unless we are in the rule that initially
-   * invokes the ATN simulator.
-   */
+  /// We cannot execute predicates dependent upon local context unless
+  /// we know for sure we are in the correct context. Because there is
+  /// no way to do this efficiently, we simply cannot evaluate
+  /// dependent predicates unless we are in the rule that initially
+  /// invokes the ATN simulator.
   int reachesIntoOuterContext = 0;
 
   final SemanticContext semanticContext;
@@ -57,11 +47,9 @@ class AtnConfig {
         alt = c.alt,
         reachesIntoOuterContext = c.reachesIntoOuterContext;
 
-  /**
-   * An ATN configuration is equal to another if both have
-   * the same state, they predict the same alternative, and
-   * syntactic/semantic contexts are the same.
-   */
+  /// An ATN configuration is equal to another if both have
+  /// the same state, they predict the same alternative, and
+  /// syntactic/semantic contexts are the same.
   bool operator==(Object o) {
     if (o is AtnConfig) {
       return state.stateNumber == o.state.stateNumber

@@ -1,8 +1,6 @@
 part of antlr4dart;
 
-/** This is the default error handling mechanism for antlr4dart parsers
- *  and tree parsers.
- */
+///  and tree parsers.
 class DefaultErrorStrategy implements ErrorStrategy {
 
   // This is true after we see an error and before having successfully
@@ -19,20 +17,16 @@ class DefaultErrorStrategy implements ErrorStrategy {
 
   IntervalSet _lastErrorStates;
 
-  /**
-   * The default implementation simply ensure that the handler is not
-   * in error recovery mode.
-   */
+  /// The default implementation simply ensure that the handler is not
+  /// in error recovery mode.
   void reset(Parser recognizer) {
     _endErrorCondition(recognizer);
   }
 
-  /**
-   * This method is called to enter error recovery mode when a recognition
-   * exception is reported.
-   *
-   * [recognizer] is the parser instance.
-   */
+  /// This method is called to enter error recovery mode when a recognition
+  /// exception is reported.
+  ///
+  /// [recognizer] is the parser instance.
   void beginErrorCondition(Parser recognizer) {
     _errorRecoveryMode = true;
   }
@@ -49,17 +43,15 @@ class DefaultErrorStrategy implements ErrorStrategy {
     _endErrorCondition(recognizer);
   }
 
-  /**
-   * The default implementation returns immediately if the handler is already
-   * in error recovery mode. Otherwise, it calls [beginErrorCondition]
-   * and dispatches the reporting task based on the runtime type of `e`
-   * according to the following table:
-   *
-   * * [NoViableAltException]: Dispatches the call to [_reportNoViableAlternative]
-   * * [InputMismatchException]: Dispatches the call to [_reportInputMismatch]
-   * * FailedPredicateException]: Dispatches the call to [_reportFailedPredicate]
-   * * All other types: calls [Parser.notifyErrorListeners] to report the exception
-   */
+  /// The default implementation returns immediately if the handler is already
+  /// in error recovery mode. Otherwise, it calls [beginErrorCondition]
+  /// and dispatches the reporting task based on the runtime type of `e`
+  /// according to the following table:
+  ///
+  /// * [NoViableAltException]: Dispatches the call to [_reportNoViableAlternative]
+  /// * [InputMismatchException]: Dispatches the call to [_reportInputMismatch]
+  /// * FailedPredicateException]: Dispatches the call to [_reportFailedPredicate]
+  /// * All other types: calls [Parser.notifyErrorListeners] to report the exception
   void reportError(Parser recognizer, RecognitionException e) {
     // if we've already reported an error and have not matched a token
     // yet successfully, don't report any errors.
@@ -79,11 +71,9 @@ class DefaultErrorStrategy implements ErrorStrategy {
     }
   }
 
-  /**
-   * The default implementation resynchronizes the parser by consuming tokens
-   * until we find one in the resynchronization set--loosely the set of tokens
-   * that can follow the current rule.
-   */
+  /// The default implementation resynchronizes the parser by consuming tokens
+  /// until we find one in the resynchronization set--loosely the set of tokens
+  /// that can follow the current rule.
   void recover(Parser recognizer, RecognitionException e) {
     if (_lastErrorIndex == recognizer.inputSource.index &&
       _lastErrorStates != null && _lastErrorStates.contains(recognizer.state)) {
@@ -100,48 +90,46 @@ class DefaultErrorStrategy implements ErrorStrategy {
     _consumeUntil(recognizer, followSet);
   }
 
-  /**
-   * The default implementation of [ErrorStrategy.sync] makes sure
-   * that the current lookahead symbol is consistent with what were expecting
-   * at this point in the ATN. You can call this anytime but antlr4dart only
-   * generates code to check before subrules/loops and each iteration.
-   *
-   * Implements Jim Idle's magic sync mechanism in closures and optional
-   * subrules. E.g.,
-   *
-   *      a : sync ( stuff sync )* ;
-   *      sync : {consume to what can follow sync} ;
-   *
-   * At the start of a sub rule upon error, `sync` performs single
-   * token deletion, if possible. If it can't do that, it bails on the current
-   * rule and uses the default error recovery, which consumes until the
-   * resynchronization set of the current rule.
-   *
-   * If the sub rule is optional (`(...)?`, `(...)*`, or block
-   * with an empty alternative), then the expected set includes what follows
-   * the subrule.
-   *
-   * During loop iteration, it consumes until it sees a token that can start a
-   * sub rule or what follows loop. Yes, that is pretty aggressive. We opt to
-   * stay in the loop as long as possible.
-   *
-   * **ORIGINS**
-   *
-   * Previous versions of ANTLR did a poor job of their recovery within loops.
-   * A single mismatch token or missing token would force the parser to bail
-   * out of the entire rules surrounding the loop. So, for rule
-   *
-   *      classDef : 'class' ID '{' member* '}'
-   *
-   * input with an extra token between members would force the parser to
-   * consume until it found the next class definition rather than the next
-   * member definition of the current class.
-   *
-   * This functionality cost a little bit of effort because the parser has to
-   * compare token set at the start of the loop and at each iteration. If for
-   * some reason speed is suffering for you, you can turn off this
-   * functionality by simply overriding this method as a blank { }.
-   */
+  /// The default implementation of [ErrorStrategy.sync] makes sure
+  /// that the current lookahead symbol is consistent with what were expecting
+  /// at this point in the ATN. You can call this anytime but antlr4dart only
+  /// generates code to check before subrules/loops and each iteration.
+  ///
+  /// Implements Jim Idle's magic sync mechanism in closures and optional
+  /// subrules. E.g.,
+  ///
+  ///      a : sync ( stuff sync )* ;
+  ///      sync : {consume to what can follow sync} ;
+  ///
+  /// At the start of a sub rule upon error, `sync` performs single
+  /// token deletion, if possible. If it can't do that, it bails on the current
+  /// rule and uses the default error recovery, which consumes until the
+  /// resynchronization set of the current rule.
+  ///
+  /// If the sub rule is optional (`(...)?`, `(...)*`, or block
+  /// with an empty alternative), then the expected set includes what follows
+  /// the subrule.
+  ///
+  /// During loop iteration, it consumes until it sees a token that can start a
+  /// sub rule or what follows loop. Yes, that is pretty aggressive. We opt to
+  /// stay in the loop as long as possible.
+  ///
+  /// **ORIGINS**
+  ///
+  /// Previous versions of ANTLR did a poor job of their recovery within loops.
+  /// A single mismatch token or missing token would force the parser to bail
+  /// out of the entire rules surrounding the loop. So, for rule
+  ///
+  ///      classDef : 'class' ID '{' member* '}'
+  ///
+  /// input with an extra token between members would force the parser to
+  /// consume until it found the next class definition rather than the next
+  /// member definition of the current class.
+  ///
+  /// This functionality cost a little bit of effort because the parser has to
+  /// compare token set at the start of the loop and at each iteration. If for
+  /// some reason speed is suffering for you, you can turn off this
+  /// functionality by simply overriding this method as a blank { }.
   void sync(Parser recognizer) {
     AtnState s = recognizer.interpreter.atn.states[recognizer.state];
     // If already recovering, don't try to sync
@@ -174,48 +162,46 @@ class DefaultErrorStrategy implements ErrorStrategy {
       }
   }
 
-  /**
-   * The default implementation attempts to recover from the mismatched input
-   * by using single token insertion and deletion as described below. If the
-   * recovery attempt fails, this method throws an [InputMismatchException].
-   *
-   * **EXTRA TOKEN** (single token deletion)
-   *
-   * `lookAhead(1)` is not what we are looking for. If `lookAhead(2)` has the
-   * right token, however, then assume `lookAhead(1)` is some extra spurious
-   * token and delete it. Then consume and return the next token (which was
-   * the `lookAhead(2)` token) as the successful result of the match operation.
-   *
-   * This recovery strategy is implemented by [singleTokenDeletion.
-   *
-   * **MISSING TOKEN** (single token insertion)
-   *
-   * If current token (at `lookAhead(1)`) is consistent with what could come
-   * after the expected `lookAhead(1)` token, then assume the token is missing
-   * and use the parser's [TokenFactory] to create it on the fly. The
-   * "insertion" is performed by returning the created token as the successful
-   * result of the match operation.
-   *
-   * This recovery strategy is implemented by [singleTokenInsertion].
-   *
-   * **EXAMPLE**
-   *
-   * For example, input `i=(3;` is clearly missing the `')'`. When
-   * the parser returns from the nested call to `expr`, it will have
-   * call chain:
-   *
-   *      stat -> expr -> atom
-   *
-   * and it will be trying to match the   ')'  at this point in the
-   * derivation:
-   *
-   *      => ID '=' '(' INT ')' ('+' atom)* ';'
-   *                    ^
-   * The attempt to match `')'` will fail when it sees `';'` and
-   * call [recoverInline]. To recover, it sees that `lookAhea(1)==';'`
-   * is in the set of tokens that can follow the `')'` token reference
-   * in rule `atom`. It can assume that you forgot the `')'`.
-   */
+  /// The default implementation attempts to recover from the mismatched input
+  /// by using single token insertion and deletion as described below. If the
+  /// recovery attempt fails, this method throws an [InputMismatchException].
+  ///
+  /// **EXTRA TOKEN** (single token deletion)
+  ///
+  /// `lookAhead(1)` is not what we are looking for. If `lookAhead(2)` has the
+  /// right token, however, then assume `lookAhead(1)` is some extra spurious
+  /// token and delete it. Then consume and return the next token (which was
+  /// the `lookAhead(2)` token) as the successful result of the match operation.
+  ///
+  /// This recovery strategy is implemented by [singleTokenDeletion.
+  ///
+  /// **MISSING TOKEN** (single token insertion)
+  ///
+  /// If current token (at `lookAhead(1)`) is consistent with what could come
+  /// after the expected `lookAhead(1)` token, then assume the token is missing
+  /// and use the parser's [TokenFactory] to create it on the fly. The
+  /// "insertion" is performed by returning the created token as the successful
+  /// result of the match operation.
+  ///
+  /// This recovery strategy is implemented by [singleTokenInsertion].
+  ///
+  /// **EXAMPLE**
+  ///
+  /// For example, input `i=(3;` is clearly missing the `')'`. When
+  /// the parser returns from the nested call to `expr`, it will have
+  /// call chain:
+  ///
+  ///      stat -> expr -> atom
+  ///
+  /// and it will be trying to match the   ')'  at this point in the
+  /// derivation:
+  ///
+  ///      => ID '=' '(' INT ')' ('+' atom)* ';'
+  ///                    ^
+  /// The attempt to match `')'` will fail when it sees `';'` and
+  /// call [recoverInline]. To recover, it sees that `lookAhea(1)==';'`
+  /// is in the set of tokens that can follow the `')'` token reference
+  /// in rule `atom`. It can assume that you forgot the `')'`.
   Token recoverInline(Parser recognizer) {
     // SINGLE TOKEN DELETION
     Token matchedSymbol = _singleTokenDeletion(recognizer);
@@ -408,7 +394,8 @@ class DefaultErrorStrategy implements ErrorStrategy {
     }
     return
       recognizer.tokenFactory(
-          new Pair<TokenProvider, CharSource>(current.tokenProvider, current.tokenProvider.inputSource),
+          new Pair<TokenProvider, CharSource>(current.tokenProvider,
+              current.tokenProvider.inputSource),
           expectedTokenType,
           tokenText,
           Token.DEFAULT_CHANNEL,

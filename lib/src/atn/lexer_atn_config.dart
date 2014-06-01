@@ -2,9 +2,7 @@ part of antlr4dart;
 
 class LexerAtnConfig extends AtnConfig {
 
-  /**
-   * Capture lexer actions we traverse.
-   */
+  /// Capture lexer actions we traverse.
   final LexerActionExecutor lexerActionExecutor;
 
   final bool hasPassedThroughNonGreedyDecision;

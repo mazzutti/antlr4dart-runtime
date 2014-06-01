@@ -1,10 +1,8 @@
 part of antlr4dart;
 
-/**
- * This implementation of [ErrorListener] dispatches all calls to a
- * collection of delegate listeners. This reduces the effort required
- * to support multiple listeners.
- */
+/// This implementation of [ErrorListener] dispatches all calls to a
+/// collection of delegate listeners. This reduces the effort required
+/// to support multiple listeners.
 class ProxyErrorListener implements ErrorListener {
   final Iterable delegates;
 

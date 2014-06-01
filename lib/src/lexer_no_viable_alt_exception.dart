@@ -2,15 +2,11 @@ part of antlr4dart;
 
 class LexerNoViableAltException extends RecognitionException {
 
-  /**
-   * Matching attempted at what input index?
-   */
+  /// Matching attempted at what input index?
   final int startIndex;
 
-  /**
-   * Which configurations did we try at input.index() that
-   * couldn't match input.LA(1)?
-   */
+  /// Which configurations did we try at `input.index` that
+  /// couldn't match `input.lookAhead(1)`?
   final AtnConfigSet deadEndConfigs;
 
   LexerNoViableAltException(Lexer lexer,
