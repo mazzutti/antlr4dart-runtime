@@ -94,13 +94,13 @@ class ParserRuleContext extends RuleContext {
         && i < children.length ? children[i] : null;
   }
 
-  dynamic getChildAt(Type ctxType, int i) {
+  dynamic getChildAt(Function isInstanceOf, int i) {
     if ( children==null || i < 0 || i >= children.length) {
       return null;
     }
     int j = -1; // what element have we found with ctxType?
     for (ParseTree o in children) {
-      if (implements(o, ctxType)) {
+      if (isInstanceOf(o)) {
         j++;
         if (j == i) return o;
       }
@@ -143,15 +143,15 @@ class ParserRuleContext extends RuleContext {
     return tokens;
   }
 
-  dynamic getRuleContext(Type ctxType, int i) {
-    return getChildAt(ctxType, i);
+  dynamic getRuleContext(Function isInstanceOf, int i) {
+    return getChildAt(isInstanceOf, i);
   }
 
-  List getRuleContexts(Type ctxType) {
+  List getRuleContexts(Function isInstanceOf) {
     if (children == null) return [];
     List contexts = null;
     for (ParseTree o in children) {
-      if (implements(o, ctxType)) {
+      if (isInstanceOf(o)) {
         if (contexts == null) {
           contexts = new List();
         }

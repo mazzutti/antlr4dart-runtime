@@ -1,6 +1,5 @@
 library antlr4dart;
 
-import 'dart:mirrors';
 import 'dart:collection';
 import 'dart:math';
 import 'package:fixnum/fixnum.dart';
@@ -103,7 +102,6 @@ part 'src/misc/double_key_map.dart';
 part 'src/misc/interval.dart';
 part 'src/misc/interval_set.dart';
 part 'src/misc/int_set.dart';
-part 'src/misc/mirror_util.dart';
 part 'src/misc/murmur_hash.dart';
 part 'src/misc/pair.dart';
 part 'src/tree/abstract_parse_tree_visitor.dart';

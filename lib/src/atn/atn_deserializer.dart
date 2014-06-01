@@ -59,8 +59,7 @@ class AtnDeserializer {
         atn.addState(null);
         continue;
       }
-      var code = codes[p++];
-      int ruleIndex = (code == -1) ? 65535: code;
+      var ruleIndex = codes[p++];
       AtnState s = stateFactory(stype, ruleIndex);
       if (stype == AtnState.LOOP_END) { // special case
         int loopBackStateNumber = codes[p++];
@@ -106,15 +105,11 @@ class AtnDeserializer {
       atn.ruleToStartState[i] = startState;
       if (atn.grammarType == AtnType.LEXER) {
         int tokenType = codes[p++];
-        if (tokenType == 0xFFFF) tokenType = Token.EOF;
         atn.ruleToTokenType[i] = tokenType;
         if (!_isFeatureSupported(_ADDED_LEXER_ACTIONS, uuid)) {
           // this piece of unused metadata was serialized prior to the
           // addition of LexerAction
           int actionIndexIgnored = codes[p++];
-          if (actionIndexIgnored == 0xFFFF) {
-            actionIndexIgnored = -1;
-          }
         }
       }
     }
@@ -151,7 +146,6 @@ class AtnDeserializer {
       int ttype = codes[p++];
       int arg1 = codes[p++];
       int arg2 = codes[p++];
-      arg2 = (arg2 == -1) ? 65535: arg2;
       int arg3 = codes[p++];
       Transition trans = edgeFactory(atn, ttype, src, trg, arg1, arg2, arg3, sets);
       AtnState srcState = atn.states[src];
@@ -208,9 +202,7 @@ class AtnDeserializer {
         for (int i = 0; i < atn.lexerActions.length; i++) {
             LexerActionType actionType = LexerActionType.values[codes[p++]];
             int data1 = codes[p++];
-            data1 = data1 == 0xFFFF ? -1 : data1;
             int data2 = codes[p++];
-            data2 = data2 == 0xFFFF ? -1 : data2;
             LexerAction lexerAction = _lexerActionFactory(actionType, data1, data2);
             atn.lexerActions[i] = lexerAction;
           }
