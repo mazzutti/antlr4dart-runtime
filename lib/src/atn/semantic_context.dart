@@ -14,27 +14,30 @@ abstract class SemanticContext {
   /// sense, this avoids a cast error from [RuleContext] to myruleContext.
   ///
   /// For context dependent predicates, we must pass in a local context so that
-  /// references such as `$arg` evaluate properly as `_localctx.arg`. We only
+  /// references such as `$arg` evaluate properly as `localCtx.arg`. We only
   /// capture context dependent predicates in the context in which we begin
   /// prediction, so we passed in the outer context here in case of context
   /// dependent predicate evaluation.
+  ///
+  /// [parser] is the parser instance.
+  /// [outerContext] is the current parser context object.
   bool eval(Recognizer parser, RuleContext outerContext);
 
   /// Evaluate the precedence predicates for the context and reduce the result.
   ///
   /// [parser] is the parser instance.
   /// [outerContext] is the current parser context object.
-  /// Return the simplified semantic context after precedence predicates are
-  /// evaluated, which will be one of the following values.
   ///
-  /// * [SemanticContext.NONE]: if the predicate simplifies to `true` after precedence predicates
-  ///   are evaluated.
-  /// * `null`: if the predicate simplifies to `false` after precedence predicates
-  ///   are evaluated.
+  /// Return the simplified semantic context after precedence predicates are
+  /// evaluated, which will be one of the following values:
+  /// * [NONE]: if the predicate simplifies to `true` after
+  ///   precedence predicates are evaluated.
+  /// * `null`: if the predicate simplifies to `false` after precedence
+  ///   predicates are evaluated.
   /// * `this`: if the semantic context is not changed as a result of precedence
   ///   predicate evaluation.
-  /// * A non-`null` [SemanticContext]: the new simplified semantic context after
-  ///   precedence predicates are evaluated.
+  /// * A non-`null` [SemanticContext]: the new simplified semantic context
+  ///   after precedence predicates are evaluated.
   SemanticContext evalPrecedence(Recognizer parser, RuleContext outerContext) {
     return this;
   }
@@ -43,49 +46,39 @@ abstract class SemanticContext {
     if (a == null || a == NONE) return b;
     if (b == null || b == NONE) return a;
     And result = new And(a, b);
-    if (result.opnds.length == 1) {
-      return result.opnds[0];
-    }
+    if (result.operands.length == 1) return result.operands[0];
     return result;
   }
 
-  ///  See [ParserATNSimulator.predsForAmbigAlts]
+  ///  See [ParserATNSimulator.predsForAmbigAlts].
   static SemanticContext or(SemanticContext a, SemanticContext b) {
     if (a == null) return b;
     if (b == null) return a;
     if (a == NONE || b == NONE) return NONE;
     Or result = new Or(a, b);
-    if (result.opnds.length == 1) {
-      return result.opnds[0];
-    }
+    if (result.operands.length == 1) return result.operands[0];
     return result;
   }
 
-  static List<PrecedencePredicate> _filterPrecedencePredicates(Set<SemanticContext> iterable) {
+  static _filterPrecPredicates(Set<SemanticContext> iterable) {
     List<PrecedencePredicate> result = null;
     List<SemanticContext> copy = new List<SemanticContext>.from(iterable);
-    for (Iterator<SemanticContext> iterator = copy.iterator; iterator.moveNext();) {
+    for (Iterator iterator = copy.iterator; iterator.moveNext();) {
       SemanticContext context = iterator.current;
       if (context is PrecedencePredicate) {
-        if (result == null) {
-          result = new List<PrecedencePredicate>();
-        }
+        if (result == null) result = new List<PrecedencePredicate>();
         result.add(context);
         iterable.remove(context);
       }
     }
-    if (result == null) {
-      return <PrecedencePredicate>[];
-    }
+    if (result == null) return <PrecedencePredicate>[];
     return result;
   }
 
   static PrecedencePredicate _min(List<PrecedencePredicate> predicates) {
     PrecedencePredicate min = predicates[0];
     for(int i = 1; i < predicates.length; i++) {
-      if (min.compareTo(predicates[i]) > 0) {
-        min = predicates[i];
-      }
+      if (min.compareTo(predicates[i]) > 0) min = predicates[i];
     }
     return min;
   }
@@ -114,12 +107,11 @@ class Predicate extends SemanticContext {
     return hashCode;
   }
 
-  bool operator==(Object obj) {
-    if (obj is Predicate)
-      return ruleIndex == obj.ruleIndex &&
-          predIndex == obj.predIndex &&
-          isCtxDependent == obj.isCtxDependent;
-    return false;
+  bool operator==(Object other) {
+    return other is Predicate
+        && ruleIndex == other.ruleIndex
+        && predIndex == other.predIndex
+        && isCtxDependent == other.isCtxDependent;
   }
 
   String toString() => "{$ruleIndex:$predIndex}?";
@@ -127,35 +119,36 @@ class Predicate extends SemanticContext {
 
 class And extends SemanticContext {
 
-  final List<SemanticContext> opnds;
+  final List<SemanticContext> operands;
 
   And(SemanticContext a, SemanticContext b)
-    : opnds = new List<SemanticContext> () {
-    Set<SemanticContext> operands = new HashSet<SemanticContext>();
-    if (a is And) operands.addAll(a.opnds);
-    else opnds.add(a);
-    if (b is And) operands.addAll(b.opnds);
-    else operands.add(b);
-    var precedencePredicates = SemanticContext._filterPrecedencePredicates(operands);
-    if (!precedencePredicates.isEmpty) {
-      // interested in the transition with the lowest precedence
-      var reduced = SemanticContext._min(precedencePredicates);
-      operands.add(reduced);
+      : operands = new List<SemanticContext> () {
+    Set<SemanticContext> opnds = new HashSet<SemanticContext>();
+    if (a is And) {
+      opnds.addAll(a.operands);
+    } else {
+      operands.add(a);
     }
-    opnds.addAll(operands);
+    if (b is And) {
+      opnds.addAll(b.operands);
+    } else {
+      opnds.add(b);
+    }
+    var precPredicates = SemanticContext._filterPrecPredicates(opnds);
+    if (!precPredicates.isEmpty) {
+      // interested in the transition with the lowest precedence
+      var reduced = SemanticContext._min(precPredicates);
+      opnds.add(reduced);
+    }
+    operands.addAll(opnds);
   }
 
-  bool operator==(Object obj) {
-    if (obj is! And) return false;
-    return opnds == (obj as And).opnds;
-  }
+  int get hashCode => MurmurHash.calcHashCode(operands, runtimeType.hashCode);
 
-  int get hashCode {
-    return MurmurHash.calcHashCode(opnds, runtimeType.hashCode);
-  }
+  bool operator==(Object other) =>other is And && operands == other.operands;
 
   bool eval(Recognizer parser, RuleContext outerContext) {
-    for (SemanticContext opnd in opnds) {
+    for (SemanticContext opnd in operands) {
       if (!opnd.eval(parser, outerContext)) return false;
     }
     return true;
@@ -163,8 +156,8 @@ class And extends SemanticContext {
 
   SemanticContext evalPrecedence(Recognizer parser, RuleContext outerContext) {
     bool differs = false;
-    List<SemanticContext> operands = new List<SemanticContext>();
-    for (SemanticContext context in opnds) {
+    List<SemanticContext> opnds = new List<SemanticContext>();
+    for (SemanticContext context in operands) {
       SemanticContext evaluated = context.evalPrecedence(parser, outerContext);
       differs = differs || (evaluated != context);
       if (evaluated == null) {
@@ -172,49 +165,50 @@ class And extends SemanticContext {
         return null;
       } else if (evaluated != SemanticContext.NONE) {
         // Reduce the result by skipping true elements
-        operands.add(evaluated);
+        opnds.add(evaluated);
       }
     }
     if (!differs) return this;
-    if (operands.isEmpty) {
+    if (opnds.isEmpty) {
       // all elements were true, so the AND context is true
       return SemanticContext.NONE;
     }
-    SemanticContext result = operands[0];
-    for (int i = 1; i < operands.length; i++) {
-      result = SemanticContext.and(result, operands[i]);
+    SemanticContext result = opnds[0];
+    for (int i = 1; i < opnds.length; i++) {
+      result = SemanticContext.and(result, opnds[i]);
     }
     return result;
   }
 
-  String toString() => opnds.join('&&');
+  String toString() => operands.join('&&');
 }
 
 class Or extends SemanticContext {
 
-  final List<SemanticContext> opnds;
+  final List<SemanticContext> operands;
 
   Or(SemanticContext a, SemanticContext b) :
-    opnds = new List<SemanticContext> () {
-    Set<SemanticContext> operands = new HashSet<SemanticContext>();
-    if (a is Or) operands.addAll(a.opnds);
-    else operands.add(a);
-    if (b is Or) operands.addAll(b.opnds);
-    else operands.add(b);
-    opnds.addAll(operands);
+    operands = new List<SemanticContext> () {
+    var opnds = new HashSet<SemanticContext>();
+    if (a is Or) {
+      opnds.addAll(a.operands);
+    } else {
+      opnds.add(a);
+    }
+    if (b is Or) {
+      opnds.addAll(b.operands);
+    } else {
+      opnds.add(b);
+    }
+    operands.addAll(opnds);
   }
 
-  bool operator==(Object obj) {
-    if (obj is! Or) return false;
-    return opnds == (obj as Or).opnds;
-  }
+  int  get hashCode => MurmurHash.calcHashCode(operands, runtimeType.hashCode);
 
-  int  get hashCode {
-    return MurmurHash.calcHashCode(opnds, runtimeType.hashCode);
-  }
+  bool operator==(Object other) => other is Or && operands == other.operands;
 
   bool eval(Recognizer parser, RuleContext outerContext) {
-    for (SemanticContext opnd in opnds) {
+    for (SemanticContext opnd in operands) {
       if (opnd.eval(parser, outerContext)) return true;
     }
     return false;
@@ -222,8 +216,8 @@ class Or extends SemanticContext {
 
   SemanticContext evalPrecedence(Recognizer parser, RuleContext outerContext) {
     bool differs = false;
-    List<SemanticContext> operands = new List<SemanticContext>();
-    for (SemanticContext context in opnds) {
+    var opnds = new List<SemanticContext>();
+    for (SemanticContext context in operands) {
       SemanticContext evaluated = context.evalPrecedence(parser, outerContext);
       differs = differs || (evaluated != context);
       if (evaluated == SemanticContext.NONE) {
@@ -231,54 +225,46 @@ class Or extends SemanticContext {
         return SemanticContext.NONE;
       } else if (evaluated != null) {
         // Reduce the result by skipping false elements
-        operands.add(evaluated);
+        opnds.add(evaluated);
       }
     }
     if (!differs) return this;
-    if (operands.isEmpty) {
+    if (opnds.isEmpty) {
       // all elements were false, so the OR context is false
       return null;
     }
-    SemanticContext result = operands[0];
-    for (int i = 1; i < operands.length; i++) {
-      result = SemanticContext.or(result, operands[i]);
+    SemanticContext result = opnds[0];
+    for (int i = 1; i < opnds.length; i++) {
+      result = SemanticContext.or(result, opnds[i]);
     }
     return result;
   }
 
-  String toString() => opnds.join("||");
+  String toString() => operands.join("||");
 }
 
-class PrecedencePredicate extends SemanticContext implements Comparable<PrecedencePredicate> {
+class PrecedencePredicate extends SemanticContext
+                          implements Comparable<PrecedencePredicate> {
+
   final int precedence;
 
   PrecedencePredicate([this.precedence = 0]);
+
+  int get hashCode => 31 + precedence;
 
   bool eval(Recognizer parser, RuleContext outerContext) {
     return parser.precpred(outerContext, precedence);
   }
 
   SemanticContext evalPrecedence(Recognizer parser, RuleContext outerContext) {
-    if (parser.precpred(outerContext, precedence)) {
-      return SemanticContext.NONE;
-    }
-    return null;
+    return parser
+        .precpred(outerContext, precedence) ? SemanticContext.NONE : null;
   }
 
-  int compareTo(PrecedencePredicate o) {
-    return precedence - o.precedence;
-  }
+  int compareTo(PrecedencePredicate other) => precedence - other.precedence;
 
-  int get hashCode {
-    int hash = 1;
-    hash = 31 * hash + precedence;
-    return hash;
-  }
-
-  bool operator==(Object obj) {
-    if (obj is PrecedencePredicate)
-      return precedence == obj.precedence;
-    return false;
+  bool operator==(Object other) {
+    return other is PrecedencePredicate && precedence == other.precedence;
   }
 
   String toString() => super.toString();

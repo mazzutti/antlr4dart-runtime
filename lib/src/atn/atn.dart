@@ -16,7 +16,7 @@ class Atn {
   /// Maps from rule index to stop state number.
   List<RuleStopState> ruleToStopState;
 
-  final Map<String, TokensStartState> modeNameToStartState = new LinkedHashMap<String, TokensStartState>();
+  final modeNameToStartState = new LinkedHashMap<String, TokensStartState>();
 
   /// The type of the ATN.
   final AtnType grammarType;
@@ -38,70 +38,69 @@ class Atn {
   /// Used for runtime deserialization of ATNs from strings
   Atn(this.grammarType, this.maxTokenType);
 
-  /// Compute the set of valid tokens that can occur starting in state `s`.
-  /// If `ctx` is null, the set of tokens will not include what can follow
-  /// the rule surrounding `s`. In other words, the set will be
-  /// restricted to tokens reachable staying within `s`'s rule.
-  IntervalSet nextTokens(AtnState s, RuleContext ctx) {
-    Ll1Analyzer analizer = new Ll1Analyzer(this);
-    IntervalSet next = analizer.look(s, ctx);
-    return next;
+  int get numberOfDecisions => decisionToState.length;
+
+  /// Compute the set of valid tokens that can occur starting in [state].
+  /// If [context] is `null`, the set of tokens will not include what can
+  /// follow the rule surrounding [state]. In other words, the set will be
+  /// restricted to tokens reachable staying within [state]'s rule.
+  IntervalSet nextTokens(AtnState state, RuleContext context) {
+    return new Ll1Analyzer(this).look(state, context);
   }
 
-  /// Compute the set of valid tokens that can occur starting in `s` and
+  /// Compute the set of valid tokens that can occur starting in [state] and
   /// staying in same rule. [Token.EPSILON] is in set if we reach end of
   /// rule.
-  IntervalSet nextTokensInSameRule(AtnState s) {
-    if (s.nextTokenWithinRule != null ) return s.nextTokenWithinRule;
-    s.nextTokenWithinRule = nextTokens(s, null);
-    s.nextTokenWithinRule.isReadonly = true;
-    return s.nextTokenWithinRule;
+  IntervalSet nextTokensInSameRule(AtnState state) {
+    if (state.nextTokenWithinRule != null) return state.nextTokenWithinRule;
+    return (state
+        ..nextTokenWithinRule = nextTokens(state, null)
+        ..nextTokenWithinRule.isReadonly = true).nextTokenWithinRule;
   }
 
   void addState(AtnState state) {
     if (state != null) {
-      state.atn = this;
-      state.stateNumber = states.length;
+      state
+          ..atn = this
+          ..stateNumber = states.length;
     }
     states.add(state);
   }
 
   void removeState(AtnState state) {
-    // just free mem, don't shift states in list
     states[state.stateNumber] = null;
   }
 
-  int defineDecisionState(DecisionState s) {
-    decisionToState.add(s);
-    s.decision = decisionToState.length - 1;
-    return s.decision;
+  int defineDecisionState(DecisionState state) {
+    decisionToState.add(state);
+    state.decision = decisionToState.length - 1;
+    return state.decision;
   }
 
   DecisionState getDecisionState(int decision) {
-    if (decisionToState.isNotEmpty) {
-      return decisionToState[decision];
-    }
-    return null;
+    return decisionToState.isNotEmpty ? decisionToState[decision] : null;
   }
 
-  int get numberOfDecisions => decisionToState.length;
-
   /// Computes the set of input symbols which could follow ATN state number
-  /// `stateNumber` in the specified full `context`. This method considers the
-  /// complete parser context, but does not evaluate semantic predicates (i.e.
-  /// all predicates encountered during the calculation are assumed true).
+  /// [stateNumber] in the specified full [context].
+  ///
+  /// This method considers the complete parser context, but does not evaluate
+  /// semantic predicates (i.e. all predicates encountered during the
+  /// calculation are assumed true).
+  ///
   /// If a path in the ATN exists from the starting state to the [RuleStopState]
   /// of the outermost context without matching any symbols, [Token.EOF] is
   /// added to the returned set.
   ///
-  /// If `context` is `null`, it is treated as [ParserRuleContext.EMPTY].
+  /// If [context] is `null`, it is treated as [ParserRuleContext.EMPTY].
   ///
   /// [stateNumber] is the ATN state number.
   /// [context] is the full parse context.
-  /// Return is the set of potentially valid input symbols which could follow the
-  /// specified state in the specified context.
-  /// Throws [ArgumentError] if the ATN does not contain a state with
-  /// number `stateNumber`.
+  ///
+  /// Return is the set of potentially valid input symbols which could follow
+  /// the specified state in the specified context.
+  /// An [ArgumentError] occurs when the ATN does not contain a state with
+  /// number [stateNumber].
   IntervalSet getExpectedTokens(int stateNumber, RuleContext context) {
     if (stateNumber < 0 || stateNumber >= states.length) {
       throw new ArgumentError("Invalid state number.");
@@ -112,15 +111,17 @@ class Atn {
     if (!following.contains(Token.EPSILON)) {
       return following;
     }
-    IntervalSet expected = new IntervalSet();
-    expected.addAll(following);
-    expected.remove(Token.EPSILON);
-    while (ctx != null && ctx.invokingState >= 0 && following.contains(Token.EPSILON)) {
+    IntervalSet expected = new IntervalSet()
+        ..addAll(following)
+        ..remove(Token.EPSILON);
+    while (ctx != null && ctx.invokingState >= 0
+        && following.contains(Token.EPSILON)) {
       AtnState invokingState = states[ctx.invokingState];
-      RuleTransition rt = invokingState.transition(0);
+      RuleTransition rt = invokingState.getTransition(0);
       following = nextTokensInSameRule(rt.followState);
-      expected.addAll(following);
-      expected.remove(Token.EPSILON);
+      expected
+          ..addAll(following)
+          ..remove(Token.EPSILON);
       ctx = ctx.parent;
     }
     if (following.contains(Token.EPSILON)) {

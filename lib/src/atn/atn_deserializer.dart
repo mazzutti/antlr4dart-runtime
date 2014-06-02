@@ -1,10 +1,47 @@
 part of antlr4dart;
 
+class AtnDeserializationOptions {
+
+  static final defaultOptions = new AtnDeserializationOptions();
+
+  final bool isReadOnly;
+  bool _verifyAtn = true;
+  bool _generateRuleBypassTransitions = false;
+
+  AtnDeserializationOptions({AtnDeserializationOptions options,
+                             this.isReadOnly:true}) {
+    if (options != null) {
+      _verifyAtn = options.isVerifyAtn;
+      _generateRuleBypassTransitions = options.isGenerateRuleBypassTransitions;
+    }
+  }
+
+  bool get isVerifyAtn => _verifyAtn;
+
+  void set isVerifyAtn(bool verifyAtn) {
+    _throwIfReadOnly();
+    _verifyAtn = verifyAtn;
+  }
+
+  bool get isGenerateRuleBypassTransitions => _generateRuleBypassTransitions;
+
+  void set isGenerateRuleBypassTransitions(bool generateRuleBypassTransitions) {
+    _throwIfReadOnly();
+    _generateRuleBypassTransitions = generateRuleBypassTransitions;
+  }
+
+  void _throwIfReadOnly() {
+    if (isReadOnly) {
+      throw new StateError("The object is read only.");
+    }
+  }
+}
+
 class AtnDeserializer {
 
-  static const String _BASE_SERIALIZED_UUID = "33761B2D-78BB-4A43-8B0B-4F5BEE8AACF3";
-  static const String _ADDED_PRECEDENCE_TRANSITIONS = "1DA0C57D-6C06-438A-9B27-10BCB3CE0F61";
-  static const String _ADDED_LEXER_ACTIONS = "AADB8D7E-AEEF-4415-AD2B-8204D6CF042E";
+  static const _BASE_SERIALIZED_UUID = "33761B2D-78BB-4A43-8B0B-4F5BEE8AACF3";
+  static const _ADDED_PRECEDENCE_TRANSITIONS = "1DA0C57D-6C06-438A-9B27-10BCB3CE0F61";
+  static const _ADDED_LEXER_ACTIONS = "AADB8D7E-AEEF-4415-AD2B-8204D6CF042E";
 
   static const int SERIALIZED_VERSION = 3;
 
@@ -28,24 +65,19 @@ class AtnDeserializer {
     while (iterator.moveNext()) codes.add(iterator.current - 2);
     int p = 0;
     int version = codes[p++] + 2;
-
     if (version != SERIALIZED_VERSION) {
-      throw new UnsupportedError(
-          "Could not deserialize ATN with version $version (expected $SERIALIZED_VERSION).");
+      throw new UnsupportedError("Could not deserialize ATN "
+          "with version $version (expected $SERIALIZED_VERSION).");
     }
-    String uuid = toUuid(codes.getRange(p, p += 8).toList());
-
+    String uuid = _toUuid(codes.getRange(p, p += 8).toList());
     if (!_SUPPORTED_UUIDS.contains(uuid)) {
-      String reason = "Could not deserialize ATN with UUID $uuid (expected $SERIALIZED_UUID or a legacy UUID).";
-      throw new UnsupportedError(reason);
+      throw new UnsupportedError("Could not deserialize ATN "
+          "with UUID $uuid (expected $SERIALIZED_UUID or a legacy UUID).");
     }
-
-    bool supportsPrecedencePredicates = _isFeatureSupported(_ADDED_PRECEDENCE_TRANSITIONS, uuid);
+    bool supPrecPreds = _isFeatureSupported(_ADDED_PRECEDENCE_TRANSITIONS, uuid);
     bool supportsLexerActions = _isFeatureSupported(_ADDED_LEXER_ACTIONS, uuid);
-
     AtnType grammarType = AtnType.values[codes[p++]];
     int maxTokenType = codes[p++];
-
     Atn atn = new Atn(grammarType, maxTokenType);
 
     // STATES
@@ -60,32 +92,29 @@ class AtnDeserializer {
         continue;
       }
       var ruleIndex = codes[p++];
-      AtnState s = stateFactory(stype, ruleIndex);
+      AtnState state = _stateFactory(stype, ruleIndex);
       if (stype == AtnState.LOOP_END) { // special case
         int loopBackStateNumber = codes[p++];
-        loopBackStateNumbers.add(new Pair<LoopEndState, int>(s, loopBackStateNumber));
-      } else if (s is BlockStartState) {
+        loopBackStateNumbers.add(
+            new Pair<LoopEndState, int>(state, loopBackStateNumber));
+      } else if (state is BlockStartState) {
         int endStateNumber = codes[p++];
-        endStateNumbers.add(new Pair<BlockStartState, int>(s, endStateNumber));
+        endStateNumbers.add(
+            new Pair<BlockStartState, int>(state, endStateNumber));
       }
-      atn.addState(s);
+      atn.addState(state);
     }
 
     // delay the assignment of loop back and end states until we
     // know all the state instances have been initialized
-    for (Pair<LoopEndState, int> pair in loopBackStateNumbers) {
-      pair.a.loopBackState = atn.states[pair.b];
-    }
-    for (Pair<BlockStartState, int> pair in endStateNumbers) {
-      pair.a.endState = atn.states[pair.b];
-    }
+    loopBackStateNumbers.forEach((p) => p.a.loopBackState = atn.states[p.b]);
+    endStateNumbers.forEach((p) => p.a.endState = atn.states[p.b]);
     int numNonGreedyStates = codes[p++];
     for (int i = 0; i < numNonGreedyStates; i++) {
-      int stateNumber = codes[p++] ;
+      int stateNumber = codes[p++];
       (atn.states[stateNumber] as DecisionState).nonGreedy = true;
     }
-
-    if (supportsPrecedencePredicates) {
+    if (supPrecPreds) {
       int numPrecedenceStates = codes[p++];
       for (int i = 0; i < numPrecedenceStates; i++) {
         int stateNumber = codes[p++];
@@ -116,8 +145,9 @@ class AtnDeserializer {
     atn.ruleToStopState = new List<RuleStopState>(nrules);
     for (AtnState state in atn.states) {
       if (state is! RuleStopState) continue;
-      atn.ruleToStopState[state.ruleIndex] = state;
-      atn.ruleToStartState[state.ruleIndex].stopState = state;
+      atn
+          ..ruleToStopState[state.ruleIndex] = state
+          ..ruleToStartState[state.ruleIndex].stopState = state;
     }
     // MODES
     int nmodes = codes[p++];
@@ -125,6 +155,7 @@ class AtnDeserializer {
       var t = atn.states[codes[p++]];
       atn.modeToStartState.add(t);
     }
+
     // SETS
     List<IntervalSet> sets = new List<IntervalSet>();
     int nsets = codes[p++];
@@ -138,6 +169,7 @@ class AtnDeserializer {
         set.add(codes[p++], codes[p++]);
       }
     }
+
     // EDGES
     int nedges = codes[p++];
     for (int i = 0; i < nedges; i++) {
@@ -147,14 +179,13 @@ class AtnDeserializer {
       int arg1 = codes[p++];
       int arg2 = codes[p++];
       int arg3 = codes[p++];
-      Transition trans = edgeFactory(atn, ttype, src, trg, arg1, arg2, arg3, sets);
-      AtnState srcState = atn.states[src];
-      srcState.addTransition(trans);
+      var trans = _edgeFactory(atn, ttype, src, trg, arg1, arg2, arg3, sets);
+      AtnState srcState = atn.states[src]..addTransition(trans);
     }
     // edges for rule stop states can be derived, so they aren't serialized
     for (AtnState state in atn.states) {
       for (int i = 0; i < state.numberOfTransitions; i++) {
-        Transition t = state.transition(i);
+        Transition t = state.getTransition(i);
         if (t is! RuleTransition) continue;
         atn.ruleToStopState[t.target.ruleIndex].addTransition(
             new EpsilonTransition((t as RuleTransition).followState));
@@ -164,25 +195,23 @@ class AtnDeserializer {
       if (state is BlockStartState) {
         // we need to know the end state to set its start state
         if (state.endState == null)
-          throw new StateError('we need to know the end state to set its start state');
+          throw new StateError(
+              'we need to know the end state to set its start state');
         // block end states can only be associated to a single block start state
         if (state.endState.startState != null)
-          throw new StateError('block end states can only be associated to a single block start state');
+          throw new StateError('block end states can'
+              ' only be associated to a single block start state');
         state.endState.startState = state;
       }
       if (state is PlusLoopbackState) {
         for (int i = 0; i < state.numberOfTransitions; i++) {
-          AtnState target = state.transition(i).target;
-          if (target is PlusBlockStartState) {
-            target.loopBackState = state;
-          }
+          AtnState target = state.getTransition(i).target;
+          if (target is PlusBlockStartState) target.loopBackState = state;
         }
       } else if (state is StarLoopbackState) {
         for (int i = 0; i < state.numberOfTransitions; i++) {
-          AtnState target = state.transition(i).target;
-          if (target is StarLoopEntryState) {
-            target.loopBackState = state;
-          }
+          AtnState target = state.getTransition(i).target;
+          if (target is StarLoopEntryState) target.loopBackState = state;
         }
       }
     }
@@ -195,16 +224,13 @@ class AtnDeserializer {
     }
 
     // LEXER ACTIONS
-    //
     if (atn.grammarType == AtnType.LEXER) {
       if (supportsLexerActions) {
         atn.lexerActions = new List<LexerAction>(codes[p++]);
         for (int i = 0; i < atn.lexerActions.length; i++) {
             LexerActionType actionType = LexerActionType.values[codes[p++]];
-            int data1 = codes[p++];
-            int data2 = codes[p++];
-            LexerAction lexerAction = _lexerActionFactory(actionType, data1, data2);
-            atn.lexerActions[i] = lexerAction;
+            atn.lexerActions[i] =
+                _lexerActionFactory(actionType, codes[p++], codes[p++]);
           }
       } else {
         // for compatibility with older serialized ATNs, convert the old
@@ -213,12 +239,13 @@ class AtnDeserializer {
         List<LexerAction> legacyLexerActions = new List<LexerAction>();
         for (AtnState state in atn.states) {
           for (int i = 0; i < state.numberOfTransitions; i++) {
-            Transition transition = state.transition(i);
+            Transition transition = state.getTransition(i);
             if (transition is! ActionTransition) continue;
             int ruleIndex = (transition as ActionTransition).ruleIndex;
             int actionIndex = (transition as ActionTransition).actionIndex;
-            LexerCustomAction lexerAction = new LexerCustomAction(ruleIndex, actionIndex);
-            state.setTransition(i, new ActionTransition(transition.target, ruleIndex, legacyLexerActions.length, false));
+            var lexerAction = new LexerCustomAction(ruleIndex, actionIndex);
+            state.setTransition(i, new ActionTransition(
+                transition.target, ruleIndex, legacyLexerActions.length, false));
             legacyLexerActions.add(lexerAction);
           }
         }
@@ -227,12 +254,10 @@ class AtnDeserializer {
     }
 
     _markPrecedenceDecisions(atn);
+    if (_deserializationOptions.isVerifyAtn) _verifyAtn(atn);
 
-    if (_deserializationOptions.isVerifyAtn) {
-      _verifyAtn(atn);
-    }
-
-    if (_deserializationOptions.isGenerateRuleBypassTransitions && atn.grammarType == AtnType.PARSER) {
+    if (_deserializationOptions.isGenerateRuleBypassTransitions
+        && atn.grammarType == AtnType.PARSER) {
       atn.ruleToTokenType = new List<int>(atn.ruleToStartState.length);
       for (int i = 0; i < atn.ruleToStartState.length; i++) {
         atn.ruleToTokenType[i] = atn.maxTokenType + i + 1;
@@ -255,32 +280,37 @@ class AtnDeserializer {
           for (AtnState state in atn.states) {
             if (state.ruleIndex != i) continue;
             if (state is! StarLoopEntryState) continue;
-            AtnState maybeLoopEndState = state.transition(state.numberOfTransitions - 1).target;
+            AtnState maybeLoopEndState = state
+                .getTransition(state.numberOfTransitions - 1).target;
             if (maybeLoopEndState is! LoopEndState) continue;
-            if (maybeLoopEndState.epsilonOnlyTransitions && maybeLoopEndState.transition(0).target is RuleStopState) {
+            if (maybeLoopEndState.epsilonOnlyTransitions
+                && maybeLoopEndState.getTransition(0).target is RuleStopState) {
               endState = state;
               break;
             }
           }
           if (endState == null) {
-            throw new UnsupportedError("Couldn't identify final state of the precedence rule prefix section.");
+            throw new UnsupportedError("Couldn't "
+                "identify final state of the precedence rule prefix section.");
           }
-          excludeTransition = (endState as StarLoopEntryState).loopBackState.transition(0);
+          excludeTransition = (endState as
+              StarLoopEntryState).loopBackState.getTransition(0);
         } else {
           endState = atn.ruleToStopState[i];
         }
-        // all non-excluded transitions that currently target end state need to target blockEnd instead
+        // all non-excluded transitions that currently target end state
+        // need to target blockEnd instead
         for (AtnState state in atn.states) {
           for (Transition transition in state.transitions) {
             if (transition == excludeTransition) continue;
-            if (transition.target == endState) {
-              transition.target = bypassStop;
-            }
+            if (transition.target == endState) transition.target = bypassStop;
           }
         }
-        // all transitions leaving the rule start state need to leave blockStart instead
+        // all transitions leaving the rule start state need to leave
+        // blockStart instead
         while (atn.ruleToStartState[i].numberOfTransitions > 0) {
-          Transition transition = atn.ruleToStartState[i].removeTransition(atn.ruleToStartState[i].numberOfTransitions - 1);
+          Transition transition = atn.ruleToStartState[i]
+            .removeTransition(atn.ruleToStartState[i].numberOfTransitions - 1);
           bypassStart.addTransition(transition);
         }
         // link the new states
@@ -289,106 +319,18 @@ class AtnDeserializer {
 
         AtnState matchState = new BasicState();
         atn.addState(matchState);
-        matchState.addTransition(new AtomTransition(bypassStop, atn.ruleToTokenType[i]));
+        matchState.addTransition(
+            new AtomTransition(bypassStop, atn.ruleToTokenType[i]));
         bypassStart.addTransition(new EpsilonTransition(matchState));
       }
-      if (_deserializationOptions.isVerifyAtn) {
-        // reverify after modification
-        _verifyAtn(atn);
-      }
+      if (_deserializationOptions.isVerifyAtn) _verifyAtn(atn);
     }
     return atn;
   }
 
-  /// Analyze the [StarLoopEntryState] states in the specified ATN to set
-  /// the [StarLoopEntryState.precedenceRuleDecision] field to the
-  /// correct value.
-  ///
-  /// [atn] is the ATN.
-  void _markPrecedenceDecisions(Atn atn) {
-    for (AtnState state in atn.states) {
-      if (state is! StarLoopEntryState) continue;
-      // We analyze the ATN to determine if this ATN decision state is the
-      // decision for the closure block that determines whether a
-      // precedence rule should continue or complete.
-      if (atn.ruleToStartState[state.ruleIndex].isPrecedenceRule) {
-        AtnState maybeLoopEndState = state.transition(state.numberOfTransitions - 1).target;
-        if (maybeLoopEndState is LoopEndState) {
-          if (maybeLoopEndState.epsilonOnlyTransitions && maybeLoopEndState.transition(0).target is RuleStopState) {
-            (state as StarLoopEntryState).precedenceRuleDecision = true;
-          }
-        }
-      }
-    }
-  }
-
-  LexerAction _lexerActionFactory(LexerActionType type, int data1, int data2) {
-    switch (type) {
-      case LexerActionType.CHANNEL:
-        return new LexerChannelAction(data1);
-      case LexerActionType.CUSTOM:
-        return new LexerCustomAction(data1, data2);
-      case LexerActionType.MODE:
-        return new LexerModeAction(data1);
-      case LexerActionType.MORE:
-        return LexerMoreAction.INSTANCE;
-      case LexerActionType.POP_MODE:
-        return LexerPopModeAction.INSTANCE;
-      case LexerActionType.PUSH_MODE:
-        return new LexerPushModeAction(data1);
-      case LexerActionType.SKIP:
-        return LexerSkipAction.INSTANCE;
-      case LexerActionType.TYPE:
-        return new LexerTypeAction(data1);
-      default:
-        String message = "The specified lexer action type $type is not valid.";
-        throw new ArgumentError(message);
-      }
-    }
-
-  static void _verifyAtn(Atn atn) {
-    // verify assumptions
-    for (AtnState state in atn.states) {
-      if (state == null) continue;
-      checkCondition(state.onlyHasEpsilonTransitions || (state.numberOfTransitions <= 1));
-      if (state is PlusBlockStartState) checkCondition(state.loopBackState != null);
-      if (state is StarLoopEntryState) {
-        checkCondition(state.loopBackState != null);
-        checkCondition(state.numberOfTransitions == 2);
-        if (state.transition(0).target is StarBlockStartState) {
-          checkCondition(state.transition(1).target is LoopEndState);
-          checkCondition(!state.nonGreedy);
-        } else if (state.transition(0).target is LoopEndState) {
-          checkCondition(state.transition(1).target is StarBlockStartState);
-          checkCondition(state.nonGreedy);
-        } else {
-          throw new StateError('');
-        }
-      }
-      if (state is StarLoopbackState) {
-        checkCondition(state.numberOfTransitions == 1);
-        checkCondition(state.transition(0).target is StarLoopEntryState);
-      }
-      if (state is LoopEndState) checkCondition(state.loopBackState != null);
-      if (state is RuleStartState) checkCondition(state.stopState != null);
-      if (state is BlockStartState) checkCondition(state.endState != null);
-      if (state is BlockEndState) checkCondition(state.startState != null);
-      if (state is DecisionState) {
-        checkCondition(state.numberOfTransitions <= 1 || state.decision >= 0);
-      } else {
-        checkCondition(state.numberOfTransitions <= 1 || state is RuleStopState);
-      }
-    }
-  }
-
-  static Transition edgeFactory(Atn atn,
-                                int type,
-                                int src,
-                                int trg,
-                                int arg1,
-                                int arg2,
-                                int arg3,
-                                List<IntervalSet> sets) {
+  static Transition _edgeFactory(
+      Atn atn, int type, int src, int trg, int arg1,
+      int arg2, int arg3, List<IntervalSet> sets) {
     AtnState target = atn.states[trg];
     switch (type) {
       case Transition.EPSILON : return new EpsilonTransition(target);
@@ -413,7 +355,7 @@ class AtnDeserializer {
     throw new ArgumentError("The specified transition type is not valid.");
   }
 
-  static AtnState stateFactory(int type, int ruleIndex) {
+  static AtnState _stateFactory(int type, int ruleIndex) {
     AtnState s;
     switch (type) {
       case AtnState.INVALID_TYPE: return null;
@@ -429,20 +371,20 @@ class AtnDeserializer {
       case AtnState.STAR_LOOP_ENTRY : s = new StarLoopEntryState(); break;
       case AtnState.PLUS_LOOP_BACK : s = new PlusLoopbackState(); break;
       case AtnState.LOOP_END : s = new LoopEndState(); break;
-      default :
-        throw new ArgumentError("The specified state type $type is not valid.");
+      default : throw new ArgumentError(
+          "The specified state type $type is not valid.");
     }
     s.ruleIndex = ruleIndex;
     return s;
   }
 
-  static void checkCondition(bool condition, [String message]) {
+  static void _checkCondition(bool condition, [String message]) {
     if (!condition) {
       throw new StateError(message);
     }
   }
 
-  static String toUuid(List<int> data) {
+  static String _toUuid(List<int> data) {
     int leastSigBits = _toInt(data);
     int mostSigBits = _toInt(data, 4);
     String uuid = "${_digits(mostSigBits >> 32, 8)}-"
@@ -453,11 +395,87 @@ class AtnDeserializer {
     return uuid.toUpperCase();
   }
 
-  static int _toInt(List<int> data, [int offset = 0]) {
-    int lowOrder = (data[offset] | (data[offset + 1] << 16)) & 0x00000000FFFFFFFF;
-    return lowOrder | ((data[offset + 2] | (data[offset + 3] << 16)) << 32);
+  // Analyze the StarLoopEntryState states in the specified ATN to set the
+  // StarLoopEntryState.precedenceRuleDecision field to the correct value.
+  //
+  // atn is the ATN.
+  void _markPrecedenceDecisions(Atn atn) {
+    for (AtnState state in atn.states) {
+      if (state is! StarLoopEntryState) continue;
+      // We analyze the ATN to determine if this ATN decision state is the
+      // decision for the closure block that determines whether a
+      // precedence rule should continue or complete.
+      if (atn.ruleToStartState[state.ruleIndex].isPrecedenceRule) {
+        AtnState maybeLoopEndState = state
+           .getTransition(state.numberOfTransitions - 1).target;
+        if (maybeLoopEndState is LoopEndState) {
+          if (maybeLoopEndState.epsilonOnlyTransitions
+             && maybeLoopEndState.getTransition(0).target is RuleStopState) {
+            (state as StarLoopEntryState).precedenceRuleDecision = true;
+          }
+        }
+      }
+    }
   }
 
+  LexerAction _lexerActionFactory(LexerActionType type, int data1, int data2) {
+   switch (type) {
+     case LexerActionType.CHANNEL:return new LexerChannelAction(data1);
+     case LexerActionType.CUSTOM: return new LexerCustomAction(data1, data2);
+     case LexerActionType.MODE: return new LexerModeAction(data1);
+     case LexerActionType.MORE: return LexerMoreAction.INSTANCE;
+     case LexerActionType.POP_MODE: return LexerPopModeAction.INSTANCE;
+     case LexerActionType.PUSH_MODE: return new LexerPushModeAction(data1);
+     case LexerActionType.SKIP: return LexerSkipAction.INSTANCE;
+     case LexerActionType.TYPE: return new LexerTypeAction(data1);
+     default:
+       throw new ArgumentError(
+           "The specified lexer action type $type is not valid.");
+     }
+   }
+
+  static void _verifyAtn(Atn atn) {
+    // verify assumptions
+    for (AtnState state in atn.states) {
+      if (state == null) continue;
+      _checkCondition(
+         state.onlyHasEpsilonTransitions || (state.numberOfTransitions <= 1));
+      if (state is PlusBlockStartState)
+        _checkCondition(state.loopBackState != null);
+      if (state is StarLoopEntryState) {
+        _checkCondition(state.loopBackState != null);
+        _checkCondition(state.numberOfTransitions == 2);
+        if (state.getTransition(0).target is StarBlockStartState) {
+          _checkCondition(state.getTransition(1).target is LoopEndState);
+          _checkCondition(!state.nonGreedy);
+        } else if (state.getTransition(0).target is LoopEndState) {
+          _checkCondition(state.getTransition(1).target is StarBlockStartState);
+          _checkCondition(state.nonGreedy);
+        } else {
+          throw new StateError('');
+        }
+      }
+      if (state is StarLoopbackState) {
+        _checkCondition(state.numberOfTransitions == 1);
+        _checkCondition(state.getTransition(0).target is StarLoopEntryState);
+      }
+      if (state is LoopEndState) _checkCondition(state.loopBackState != null);
+      if (state is RuleStartState) _checkCondition(state.stopState != null);
+      if (state is BlockStartState) _checkCondition(state.endState != null);
+      if (state is BlockEndState) _checkCondition(state.startState != null);
+      if (state is DecisionState) {
+        _checkCondition(state.numberOfTransitions <= 1 || state.decision >= 0);
+      } else {
+        _checkCondition(state.numberOfTransitions <= 1 || state is RuleStopState);
+      }
+    }
+  }
+
+  static int _toInt(List<int> data, [int offset = 0]) {
+    int lowOrder = (data[offset]
+      | (data[offset + 1] << 16)) & 0x00000000FFFFFFFF;
+    return lowOrder | ((data[offset + 2] | (data[offset + 3] << 16)) << 32);
+  }
 
   static String _digits(int paramLong, int paramInt) {
     int l = 1 << paramInt * 4;
@@ -477,9 +495,7 @@ class AtnDeserializer {
   // otherwise, false.
   static bool _isFeatureSupported(String feature, String actualUuid) {
     int featureIndex = _SUPPORTED_UUIDS.indexOf(feature);
-    if (featureIndex < 0) {
-      return false;
-    }
+    if (featureIndex < 0) return false;
     return _SUPPORTED_UUIDS.indexOf(actualUuid) >= featureIndex;
   }
 }

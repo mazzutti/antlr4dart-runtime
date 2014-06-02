@@ -448,7 +448,7 @@ abstract class Parser extends Recognizer<Token, ParserAtnSimulator> {
     if (!following.contains(Token.EPSILON)) return false;
     while (ctx != null && ctx.invokingState >= 0 && following.contains(Token.EPSILON)) {
       AtnState invokingState = atn.states[ctx.invokingState];
-      RuleTransition rt = invokingState.transition(0);
+      RuleTransition rt = invokingState.getTransition(0);
       following = atn.nextTokensInSameRule(rt.followState);
       if (following.contains(symbol)) return true;
       ctx = ctx.parent;
@@ -496,8 +496,8 @@ abstract class Parser extends Recognizer<Token, ParserAtnSimulator> {
   /// For debugging and other purposes.
   List<String> get dfaStrings {
     List<String> s = new List<String>();
-    for (int d = 0; d < interpreter._decisionToDfa.length; d++) {
-      Dfa dfa = interpreter._decisionToDfa[d];
+    for (int d = 0; d < interpreter.decisionToDfa.length; d++) {
+      Dfa dfa = interpreter.decisionToDfa[d];
       s.add( dfa.toString(tokenNames) );
     }
     return s;
@@ -507,8 +507,8 @@ abstract class Parser extends Recognizer<Token, ParserAtnSimulator> {
   String dumpDfa([bool toStdOut = true]) {
     bool seenOne = false;
     StringBuffer sb = new StringBuffer();
-    for (int d = 0; d < interpreter._decisionToDfa.length; d++) {
-      Dfa dfa = interpreter._decisionToDfa[d];
+    for (int d = 0; d < interpreter.decisionToDfa.length; d++) {
+      Dfa dfa = interpreter.decisionToDfa[d];
       if (dfa.states.isNotEmpty) {
         if (seenOne) sb.writeln('');
         sb..write("Decision ")
@@ -530,7 +530,7 @@ abstract class Parser extends Recognizer<Token, ParserAtnSimulator> {
   Atn getAtnWithBypassAlts() {
     Atn result = _bypassAltsAtnCache[serializedAtn];
     if (result == null) {
-      AtnDeserializationOptions deserializationOptions = new AtnDeserializationOptions();
+      var deserializationOptions = new AtnDeserializationOptions();
       deserializationOptions.isGenerateRuleBypassTransitions = true;
       result = new AtnDeserializer(deserializationOptions).deserialize(serializedAtn);
       _bypassAltsAtnCache[serializedAtn] = result;

@@ -322,7 +322,7 @@ class DefaultErrorStrategy implements ErrorStrategy {
     // ATN state, then we know we're missing a token; error recovery
     // is free to conjure up and insert the missing token
     AtnState currentState = recognizer.interpreter.atn.states[recognizer.state];
-    AtnState next = currentState.transition(0).target;
+    AtnState next = currentState.getTransition(0).target;
     Atn atn = recognizer.interpreter.atn;
     IntervalSet expectingAtLL2 = atn.nextTokens(next, recognizer.context);
     if ( expectingAtLL2.contains(currentSymbolType) ) {
@@ -527,7 +527,7 @@ class DefaultErrorStrategy implements ErrorStrategy {
     while ( ctx!=null && ctx.invokingState>=0 ) {
       // compute what follows who invoked us
       AtnState invokingState = atn.states[ctx.invokingState];
-      RuleTransition rt = invokingState.transition(0);
+      RuleTransition rt = invokingState.getTransition(0);
       IntervalSet follow = atn.nextTokensInSameRule(rt.followState);
       recoverSet.addAll(follow);
       ctx = ctx.parent;

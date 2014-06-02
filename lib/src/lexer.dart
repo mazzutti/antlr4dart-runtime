@@ -143,14 +143,12 @@ abstract class Lexer extends Recognizer<int, LexerAtnSimulator> implements Token
   }
 
   void pushMode(int m) {
-    if (LexerAtnSimulator._debug) print("pushMode $m");
     _modeStack.add(mode);
     mode = m;
   }
 
   int popMode() {
     if (_modeStack.isEmpty) throw new StateError('');
-    if (LexerAtnSimulator._debug) print("popMode back to ${_modeStack.last}");
     mode = _modeStack.removeLast();
     return mode;
   }

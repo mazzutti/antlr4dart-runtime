@@ -2,23 +2,21 @@ part of antlr4dart;
 
 class PredictionMode {
 
-  /// Do only local context prediction (SLL style) and using
-  /// heuristic which almost always works but is much faster
-  /// than precise answer.
+  /// Do only local context prediction (SLL style) and using heuristic which
+  /// almost always works but is much faster than precise answer.
   static const PredictionMode SLL = const PredictionMode._internal("SLL");
 
-  /// Full LL(*) that always gets right answer. For speed
-  /// reasons, we terminate the prediction process when we know for
-  /// sure which alt to predict. We don't always know what
-  /// the ambiguity is in this mode.
+  /// Full LL(*) that always gets right answer. For speed reasons, we terminate
+  /// the prediction process when we know for sure which alt to predict. We
+  /// don't always know what the ambiguity is in this mode.
   static const PredictionMode LL = const PredictionMode._internal("LL");
 
-  /// Tell the full LL prediction algorithm to pursue lookahead until
-  /// it has uniquely predicted an alternative without conflict or it's
-  /// certain that it's found an ambiguous input sequence.  when this
-  /// variable is false. When true, the prediction process will
-  /// continue looking for the exact ambiguous sequence even if
-  /// it has already figured out which alternative to predict.
+  /// Tell the full LL prediction algorithm to pursue lookahead until it has
+  /// uniquely predicted an alternative without conflict or it's certain that
+  /// it's found an ambiguous input sequence.  when this variable is `false`.
+  /// When `true`, the prediction process will continue looking for the exact
+  /// ambiguous sequence even if it has already figured out which alternative
+  /// to predict.
   static const PredictionMode LL_EXACT_AMBIG_DETECTION =
       const PredictionMode._internal("LL_EXACT_AMBIG_DETECTION");
 
@@ -43,11 +41,11 @@ class PredictionMode {
   /// cannot lead to a unique SLL prediction.
   ///
   /// Assuming combined SLL+LL parsing, an SLL configuration set with only
-  /// conflicting subsets should fall back to full LL, even if the
-  /// configuration sets don't resolve to the same alternative (e.g.
-  /// `{1,2}` and `{3,4}`. If there is at least one non-conflicting
-  /// configuration, SLL could continue with the hopes that more lookahead will
-  /// resolve via one of those non-conflicting configurations.
+  /// conflicting subsets should fall back to full LL, even if the configuration
+  /// sets don't resolve to the same alternative (e.g. `{1,2}` and `{3,4}`. If
+  /// there is at least one non-conflicting configuration, SLL could continue
+  /// with the hopes that more lookahead will resolve via one of those
+  /// non-conflicting configurations.
   ///
   /// Here's the prediction termination rule them: SLL (for SLL+LL parsing)
   /// stops when it sees only conflicting configuration subsets. In contrast,
@@ -114,7 +112,8 @@ class PredictionMode {
   /// [AtnConfigSet.hasSemanticContext]), this algorithm makes a copy of
   /// the configurations to strip out all of the predicates so that a standard
   /// [AtnConfigSet] will merge everything ignoring predicates.
-  static bool hasSllConflictTerminatingPrediction(PredictionMode mode, AtnConfigSet configs) {
+  static bool hasSllConflictTerminatingPrediction(PredictionMode mode,
+                                                  AtnConfigSet configs) {
     // Configs in rule stop states indicate reaching the end of the decision
     // rule (local context) or end of start rule (full context). If all
     // configs meet this condition, then none of the configurations is able
@@ -130,8 +129,7 @@ class PredictionMode {
         // dup configs, tossing out semantic predicates
         AtnConfigSet dup = new AtnConfigSet();
         for (AtnConfig c in configs) {
-          c = new AtnConfig.from(c, semanticContext:SemanticContext.NONE);
-          dup.add(c);
+          dup.add(new AtnConfig.from(c, semanticContext:SemanticContext.NONE));
         }
         configs = dup;
       }
@@ -139,40 +137,36 @@ class PredictionMode {
     }
     // pure SLL or combined SLL+LL mode parsing
     Iterable<BitSet> altsets = getConflictingAltSubsets(configs);
-    return hasConflictingAltSet(altsets) && !hasStateAssociatedWithOneAlt(configs);
+    return hasConflictingAltSet(altsets)
+        && !hasStateAssociatedWithOneAlt(configs);
   }
 
-  /// Checks if any configuration in `configs` is in a
-  /// [RuleStopState]. Configurations meeting this condition have reached
-  /// the end of the decision rule (local context) or end of start rule (full
-  /// context).
+  /// Checks if any configuration in [configs] is in a [RuleStopState].
+  /// Configurations meeting this condition have reached the end of the
+  /// decision rule (local context) or end of start rule (full context).
   ///
   /// [configs] is the configuration set to test.
-  /// Return `true` if any configuration in `configs` is in a
-  /// [RuleStopState], otherwise `false`.
+  ///
+  /// Return `true` if any configuration in `configs` is in a [RuleStopState].
+  /// Otherwise `false`.
   static bool hasConfigInRuleStopState(AtnConfigSet configs) {
     for (AtnConfig c in configs) {
-      if (c.state is RuleStopState) {
-        return true;
-      }
+      if (c.state is RuleStopState) return true;
     }
     return false;
   }
 
-  /// Checks if all configurations in `configs` are in a
-  /// [RuleStopState]. Configurations meeting this condition have reached
-  /// the end of the decision rule (local context) or end of start rule (full
-  /// context).
+  /// Checks if all configurations in [configs] are in a [RuleStopState].
+  /// Configurations meeting this condition have reached the end of the
+  /// decision rule (local context) or end of start rule (full context).
   ///
   /// [configs] is the configuration set to test.
   ///
-  /// Return `true` if all configurations in `configs` are in a
-  /// [RuleStopState], otherwise `false`.
+  /// Return `true` if all configurations in `configs` are in a [RuleStopState].
+  /// Otherwise `false`.
   static bool allConfigsInRuleStopStates(AtnConfigSet configs) {
     for (AtnConfig config in configs) {
-      if (config.state is! RuleStopState) {
-        return false;
-      }
+      if (config.state is! RuleStopState) return false;
     }
     return true;
   }
@@ -300,64 +294,63 @@ class PredictionMode {
     return getSingleViableAlt(altsets);
   }
 
-  /// Determines if every alternative subset in `altsets` contains more
+  /// Determines if every alternative subset in [altsets] contains more
   /// than one alternative.
   ///
   /// [altsets] is a collection of alternative subsets.
-  /// Return `true` if every [BitSet] in `altsets` has
-  /// [BitSet.cardinality] > 1, otherwise `false`.
+  ///
+  /// Return `true` if every [BitSet] in [altsets] has
+  /// `[BitSet.cardinality] > 1`. Otherwise `false`.
   static bool allSubsetsConflict(Iterable<BitSet> altsets) {
     return !hasNonConflictingAltSet(altsets);
   }
 
-  /// Determines if any single alternative subset in `altsets` contains
+  /// Determines if any single alternative subset in [altsets] contains
   /// exactly one alternative.
   ///
   /// [altsets] is a collection of alternative subsets.
-  /// Return `true` if `altsets` contains a [BitSet] with
-  /// [BitSet.cardinality] 1, otherwise `false`.
+  ///
+  /// Return `true` if [altsets] contains a [BitSet] with
+  /// `[BitSet.cardinality] == 1`. Otherwise `false`.
   static bool hasNonConflictingAltSet(Iterable<BitSet> altsets) {
     for (BitSet alts in altsets) {
-      if (alts.cardinality == 1) {
-        return true;
-      }
+      if (alts.cardinality == 1) return true;
     }
     return false;
   }
 
-  /// Determines if any single alternative subset in `altsets` contains
+  /// Determines if any single alternative subset in [altsets] contains
   /// more than one alternative.
   ///
   /// [altsets] is a collection of alternative subsets.
-  /// Return `true` if `altsets` contains a [BitSet] with
-  /// [BitSet.cardinality] > 1, otherwise `false`.
+  ///
+  /// Return `true` if [altsets] contains a [BitSet] with
+  /// `[BitSet.cardinality] > 1`, otherwise `false`.
   static bool hasConflictingAltSet(Iterable<BitSet> altsets) {
     for (BitSet alts in altsets) {
-      if (alts.cardinality > 1) {
-        return true;
-      }
+      if (alts.cardinality > 1) return true;
     }
     return false;
   }
 
-  /// Determines if every alternative subset in `altsets` is equivalent.
+  /// Determines if every alternative subset in [altsets] is equivalent.
   ///
   /// [altsets] is a collection of alternative subsets.
-  /// Return `true` if every member of `altsets` is equal to the
-  /// others, otherwise `false`.
+  ///
+  /// Return `true` if every member of [altsets] is equal to the others.
+  /// Otherwise `false`.
   static bool allSubsetsEqual(Iterable<BitSet> altsets) {
     Iterator<BitSet> it = altsets.iterator;
     it.moveNext();
     BitSet first = it.current;
     while (it.moveNext()) {
-      BitSet next = it.current;
-      if (next != first) return false;
+      if (it.current != first) return false;
     }
     return true;
   }
 
   /// Returns the unique alternative predicted by all alternative subsets in
-  /// `altsets`. If no such alternative exists, this method returns
+  /// [altsets]. If no such alternative exists, this method returns
   /// [Atn.INVALID_ALT_NUMBER].
   ///
   /// [altsets] is a collection of alternative subsets.
@@ -369,20 +362,19 @@ class PredictionMode {
 
   /// Gets the complete set of represented alternatives for a collection of
   /// alternative subsets. This method returns the union of each [BitSet]
-  /// in `altsets`.
+  /// in [altsets].
   ///
   /// [altsets] is a collection of alternative subsets.
-  /// Return the set of represented alternatives in `altsets`.
+  ///
+  /// Return the set of represented alternatives in [altsets].
   static BitSet getAlts(Iterable<BitSet> altsets) {
     BitSet all = new BitSet();
-    for (BitSet alts in altsets) {
-      all.or(alts);
-    }
+    altsets.forEach((alts) => all.or(alts));
     return all;
   }
 
   /// This function gets the conflicting alt subsets from a configuration set.
-  /// For each configuration `c` in `configs`:
+  /// For each configuration `c` in [configs]:
   ///
   ///     map[c] U= c.alt // map hash/equals uses s and x, not alt and not pred
   static Iterable<BitSet> getConflictingAltSubsets(AtnConfigSet configs) {
@@ -398,8 +390,8 @@ class PredictionMode {
     return configToAlts.values;
   }
 
-  /// Get a map from state to alt subset from a configuration set. For each
-  /// configuration `c` in `configs`:
+  /// Get a map from state to alt subset from a configuration set.
+  /// For each configuration `c` in [configs]:
   ///
   ///     map[c.state] U= c.alt alt
   static Map<AtnState, BitSet> getStateToAltMap(AtnConfigSet configs) {
@@ -456,5 +448,5 @@ bool _equals(AtnConfig a, AtnConfig b) {
   if (a == b) return true;
   if (a == null || b == null) return false;
   return a.state.stateNumber == b.state.stateNumber
-    && a.context == b.context;
+      && a.context == b.context;
 }

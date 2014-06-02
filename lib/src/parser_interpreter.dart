@@ -100,7 +100,7 @@ class ParserInterpreter extends Parser {
     } else {
       edge = 1;
     }
-    Transition transition = p.transition(edge - 1);
+    Transition transition = p.getTransition(edge - 1);
     switch (transition.serializationType) {
     case Transition.EPSILON:
       if (pushRecursionContextStates.get(p.stateNumber) && (transition.target is! LoopEndState)) {
@@ -164,7 +164,7 @@ class ParserInterpreter extends Parser {
     } else {
       exitRule();
     }
-    RuleTransition ruleTransition = atn.states[state].transition(0);
+    RuleTransition ruleTransition = atn.states[state].getTransition(0);
     state = ruleTransition.followState.stateNumber;
   }
 }
