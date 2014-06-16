@@ -88,15 +88,15 @@ abstract class PredictionContext {
   /// This means only the [EMPTY] context is in set.
   bool get isEmpty => this == EMPTY;
 
-  bool get hasEmptyPath => getReturnState(length - 1) == EMPTY_RETURN_STATE;
+  bool get hasEmptyPath => returnStateFor(length - 1) == EMPTY_RETURN_STATE;
 
   int get hashCode => cachedHashCode;
 
   bool operator==(Object obj);
 
-  PredictionContext getParent(int index);
+  PredictionContext parentFor(int index);
 
-  int getReturnState(int index);
+  int returnStateFor(int index);
 
   static PredictionContext merge(PredictionContext contextA,
                                  PredictionContext contextB,
@@ -342,12 +342,12 @@ abstract class PredictionContext {
     bool changed = false;
     var parents = new List<PredictionContext>(context.length);
     for (int i = 0; i < parents.length; i++) {
-      var parent = getCachedContext(context.getParent(i), contextCache, visited);
-      if (changed || parent != context.getParent(i)) {
+      var parent = getCachedContext(context.parentFor(i), contextCache, visited);
+      if (changed || parent != context.parentFor(i)) {
         if (!changed) {
           parents = new List<PredictionContext>(context.length);
           for (int j = 0; j < context.length; j++) {
-            parents[j] = context.getParent(j);
+            parents[j] = context.parentFor(j);
           }
           changed = true;
         }
@@ -364,7 +364,7 @@ abstract class PredictionContext {
       updated = EMPTY;
     } else if (parents.length == 1) {
       updated = new SingletonPredictionContext
-          .empty(parents[0], context.getReturnState(0));
+          .empty(parents[0], context.returnStateFor(0));
     } else {
       ListPredictionContext listPredictionContext = context;
       updated = new ListPredictionContext(
@@ -387,7 +387,7 @@ abstract class PredictionContext {
       visited[context] = context;
       nodes.add(context);
       for (int i = 0; i < context.length; i++) {
-        getAllContextNodes(context.getParent(i), nodes, visited);
+        getAllContextNodes(context.parentFor(i), nodes, visited);
       }
     }
     return nodes;
@@ -423,15 +423,15 @@ abstract class PredictionContext {
           AtnState s = atn.states[stateNumber];
           String ruleName = recognizer.ruleNames[s.ruleIndex];
           localBuffer.write(ruleName);
-        } else if (prediction.getReturnState(index) != EMPTY_RETURN_STATE) {
+        } else if (prediction.returnStateFor(index) != EMPTY_RETURN_STATE) {
           if (!prediction.isEmpty) {
             // first char is '[', if more than that this isn't the first rule
             if (localBuffer.length > 1) localBuffer.write(' ');
-            localBuffer.write(prediction.getReturnState(index));
+            localBuffer.write(prediction.returnStateFor(index));
           }
         }
-        stateNumber = prediction.getReturnState(index);
-        prediction = prediction.getParent(index);
+        stateNumber = prediction.returnStateFor(index);
+        prediction = prediction.parentFor(index);
       }
       localBuffer.write("]");
       result.add(localBuffer.toString());
@@ -476,9 +476,9 @@ class EmptyPredictionContext extends SingletonPredictionContext {
 
   int get length => 1;
 
-  PredictionContext getParent(int index) => null;
+  PredictionContext parentFor(int index) => null;
 
-  int getReturnState(int index) => returnState;
+  int returnStateFor(int index) => returnState;
 
   String toString() => r"$";
 }
@@ -511,9 +511,9 @@ class ListPredictionContext extends PredictionContext {
 
   int get length => returnStates.length;
 
-  PredictionContext getParent(int index) => parents[index];
+  PredictionContext parentFor(int index) => parents[index];
 
-  int getReturnState(int index) => returnStates[index];
+  int returnStateFor(int index) => returnStates[index];
 
   bool operator==(Object other) {
     return other is ListPredictionContext
@@ -570,12 +570,12 @@ class SingletonPredictionContext extends PredictionContext {
 
   int get length => 1;
 
-  PredictionContext getParent(int index) {
+  PredictionContext parentFor(int index) {
     assert(index == 0);
     return parent;
   }
 
-  int getReturnState(int index) {
+  int returnStateFor(int index) {
     assert(index == 0);
     return returnState;
   }

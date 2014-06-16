@@ -164,7 +164,7 @@ class PredicateTransition extends AbstractPredicateTransition {
 
 class NotSetTransition extends SetTransition {
 
-  CharSource charSource;
+  StringSource stringSource;
 
   NotSetTransition(AtnState target, IntervalSet set) : super(target, set);
 

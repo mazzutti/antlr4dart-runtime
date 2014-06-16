@@ -4,17 +4,18 @@ class MurmurHash {
 
   static const int DEFAULT_SEED = 0;
 
+  const MurmurHash._internal();
+
   /// Initialize the hash using the specified [seed].
   ///
   /// Return the intermediate hash value.
-  static int initialize([int seed = DEFAULT_SEED]) {
-    return seed;
-  }
+  static int initialize([int seed = DEFAULT_SEED]) => seed;
 
   /// Update the intermediate hash value for the next input [value].
   ///
   /// [hash] is the intermediate hash value.
   /// [value] the value to add to the current hash.
+  ///
   /// Return the updated intermediate hash value.
   static int update(int hash, [int value]) {
     value = value != null ? value.hashCode : 0;
@@ -39,6 +40,7 @@ class MurmurHash {
   ///
   /// [hash] is the intermediate hash value.
   /// [numberOfWords] is the number of integer values added to the hash.
+  ///
   /// Return the final hash result.
   static int finish(int hash, int numberOfWords) {
     hash = hash ^ (numberOfWords * 4);
@@ -55,15 +57,13 @@ class MurmurHash {
   ///
   /// [data] is the iterable data.
   /// [seed] is the seed for the MurmurHash algorithm.
+  ///
   /// Return the hash code of the data.
   static int calcHashCode(Iterable<SemanticContext> data, int seed) {
     int hash = initialize(seed);
     for (var value in data) {
       hash = update(hash, value.hashCode);
     }
-    hash = finish(hash, data.length);
-    return hash & 0xFFFFFFFFFFFFFF;
+    return finish(hash, data.length) & 0xFFFFFFFFFFFFFF;
   }
-
-  MurmurHash._internal();
 }

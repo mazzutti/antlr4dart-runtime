@@ -46,11 +46,11 @@ class Ll1Analyzer {
   /// `null` and the end of the outermost rule is reached, [Token.EOF] is added
   /// to the result set.
   ///
-  /// [state] is the ATN state
+  /// [state] is the ATN state.
   /// [stopState] is the ATN state to stop at. This can be a [BlockEndState] to
   /// detect epsilon paths through a closure.
   /// [context] is the complete parser context, or `null` if the context
-  /// should be ignored
+  /// should be ignored.
   ///
   /// Return the set of tokens that can follow [state] in the ATN in the
   /// specified [context].
@@ -120,11 +120,11 @@ class Ll1Analyzer {
         if (context != PredictionContext.EMPTY ) {
           // run thru all possible stack tops in ctx
           for (int i = 0; i < context.length; i++) {
-            AtnState returnState = atn.states[context.getReturnState(i)];
+            AtnState returnState = atn.states[context.returnStateFor(i)];
             bool removed = calledRuleStack.get(returnState.ruleIndex);
             try {
               calledRuleStack.set(returnState.ruleIndex);
-              _look(returnState, stopState, context.getParent(i),
+              _look(returnState, stopState, context.parentFor(i),
                   look, lookBusy, calledRuleStack, seeThruPreds, addEof);
             } finally {
               if (removed) {
@@ -139,9 +139,7 @@ class Ll1Analyzer {
       for (int i = 0; i < n; i++) {
       Transition transition = state.getTransition(i);
       if (transition.runtimeType == RuleTransition) {
-        if (calledRuleStack.get(transition.target.ruleIndex)) {
-          continue;
-        }
+        if (calledRuleStack.get(transition.target.ruleIndex)) continue;
         PredictionContext newContext =
           new SingletonPredictionContext.empty(
               context, (transition as RuleTransition).followState.stateNumber);
@@ -150,8 +148,7 @@ class Ll1Analyzer {
               (transition as RuleTransition).target.ruleIndex, true);
           _look(transition.target, stopState, newContext,
               look, lookBusy, calledRuleStack, seeThruPreds, addEof);
-        }
-        finally {
+        } finally {
           calledRuleStack.clear((transition as RuleTransition).target.ruleIndex);
         }
       } else if (transition is AbstractPredicateTransition) {
@@ -165,7 +162,8 @@ class Ll1Analyzer {
         _look(transition.target, stopState, context, look,
             lookBusy, calledRuleStack, seeThruPreds, addEof);
       } else if (transition.runtimeType == WildcardTransition) {
-        look.addAll(IntervalSet.of(Token.MIN_USER_TOKEN_TYPE, atn.maxTokenType));
+        look.addAll(
+            IntervalSet.of(Token.MIN_USER_TOKEN_TYPE, atn.maxTokenType));
       } else {
         IntervalSet set = transition.label;
         if (set != null) {

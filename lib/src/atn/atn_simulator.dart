@@ -196,7 +196,7 @@ class ParserAtnSimulator extends AtnSimulator {
       if (dfa.isPrecedenceDfa) {
         // the start state for a precedence DFA depends on the current
         // parser precedence, and is provided by a DFA method.
-        s0 = dfa.getPrecedenceStartState(parser.precedence);
+        s0 = dfa.getPrecedenceStartStateFor(parser.precedence);
       } else {
         // the start state for a "regular" DFA is just s0
         s0 = dfa.s0;
@@ -223,7 +223,7 @@ class ParserAtnSimulator extends AtnSimulator {
           // than simply setting Dfa.s0.
           s0Closure = _applyPrecedenceFilter(s0Closure);
           s0 = _addDfaState_(dfa, new DfaState.config(s0Closure));
-          dfa.setPrecedenceStartState(parser.precedence, s0);
+          dfa.setPrecedenceStartStateFor(parser.precedence, s0);
         } else {
           s0 = _addDfaState_(dfa, new DfaState.config(s0Closure));
           dfa.s0 = s0;
@@ -438,7 +438,7 @@ class ParserAtnSimulator extends AtnSimulator {
         }
       }
       previousD = state;
-      if (token != IntSource.EOF) {
+      if (token != Token.EOF) {
         tokenSource.consume();
         token = tokenSource.lookAhead(1);
       }
@@ -585,7 +585,7 @@ class ParserAtnSimulator extends AtnSimulator {
         // So, keep going.
       }
       previous = reach;
-      if (token != IntSource.EOF) {
+      if (token != Token.EOF) {
         input.consume();
         token = input.lookAhead(1);
       }
@@ -692,7 +692,7 @@ class ParserAtnSimulator extends AtnSimulator {
     for (AtnConfig c in closure) {
       if (c.state is RuleStopState) {
         assert(c.context.isEmpty);
-        if (fullCtx || t == IntSource.EOF) {
+        if (fullCtx || t == Token.EOF) {
           if (skippedStopStates == null) {
             skippedStopStates = new List<AtnConfig>();
           }
@@ -744,7 +744,7 @@ class ParserAtnSimulator extends AtnSimulator {
         _closure(c, reach, closureBusy, false, fullCtx, treatEofAsEpsilon);
       }
     }
-    if (t == IntSource.EOF) {
+    if (t == Token.EOF) {
       // After consuming EOF no additional input is possible, so we are
       // only interested in configurations which reached the end of the
       // decision rule (local context) or end of the start rule (full
@@ -875,14 +875,14 @@ class ParserAtnSimulator extends AtnSimulator {
 
   List _getPredicatePredictions(BitSet ambigAlts,
                                 List<SemanticContext> altToPred) {
-    List<PredPrediction> pairs = new List<PredPrediction>();
+    List<_PredPrediction> pairs = new List<_PredPrediction>();
     bool containsPredicate = false;
     for (int i = 1; i < altToPred.length; i++) {
       SemanticContext pred = altToPred[i];
       // unpredicated is indicated by SemanticContext.NONE
       assert(pred != null);
       if (ambigAlts != null && ambigAlts.get(i)) {
-        pairs.add(new PredPrediction(pred, i));
+        pairs.add(new _PredPrediction(pred, i));
       }
       if (pred!=SemanticContext.NONE) containsPredicate = true;
     }
@@ -907,11 +907,11 @@ class ParserAtnSimulator extends AtnSimulator {
   // unpredicated config which behaves as "always true." If !complete
   // then we stop at the first predicate that evaluates to true. This
   // includes pairs with null predicates.
-  BitSet _evalSemanticContext(List<PredPrediction> predPredictions,
+  BitSet _evalSemanticContext(List<_PredPrediction> predPredictions,
                               ParserRuleContext outerContext,
                               bool complete) {
     BitSet predictions = new BitSet();
-    for (PredPrediction pair in predPredictions) {
+    for (_PredPrediction pair in predPredictions) {
       if (pair.pred == SemanticContext.NONE) {
         predictions.set(pair.alt, true);
         if (!complete) break;
@@ -950,7 +950,7 @@ class ParserAtnSimulator extends AtnSimulator {
       // run thru all possible stack tops in ctx
       if (!config.context.isEmpty) {
         for (int i = 0; i < config.context.length; i++) {
-          if (config.context.getReturnState(i)
+          if (config.context.returnStateFor(i)
               == PredictionContext.EMPTY_RETURN_STATE) {
             if (fullCtx) {
               configs.add(new AtnConfig.from(config, state:config.state,
@@ -963,8 +963,8 @@ class ParserAtnSimulator extends AtnSimulator {
             }
             continue;
           }
-          AtnState returnState = atn.states[config.context.getReturnState(i)];
-          PredictionContext newContext = config.context.getParent(i);
+          AtnState returnState = atn.states[config.context.returnStateFor(i)];
+          PredictionContext newContext = config.context.parentFor(i);
           AtnConfig c = new AtnConfig(
               returnState, config.alt, newContext, config.semanticContext);
           // While we have context to pop back from, we may have
@@ -1194,8 +1194,13 @@ class ParserAtnSimulator extends AtnSimulator {
                                     ParserRuleContext outerContext,
                                     AtnConfigSet configs,
                                     int startIndex) {
-    return new NoViableAltException(parser, input,
-        input.get(startIndex), input.lookToken(1), configs, outerContext);
+    return new NoViableAltException(
+        parser,
+        inputSource: input,
+        startToken: input.get(startIndex),
+        offendingToken:input.lookToken(1),
+        context:outerContext,
+        deadEndConfigs:configs);
   }
 
   static int _getUniqueAlt(AtnConfigSet configs) {
@@ -1314,7 +1319,7 @@ class LexerAtnSimulator extends AtnSimulator {
   // ATN-generated exception object.
   int _startIndex = -1;
 
-  int _mode = Lexer._DEFAULT_MODE;
+  int _mode = Lexer.DEFAULT_MODE;
 
   // Used during DFA/ATN exec to record the most recent accept configuration info.
   final _SimState _prevAccept = new _SimState();
@@ -1341,7 +1346,7 @@ class LexerAtnSimulator extends AtnSimulator {
     _startIndex = simulator._startIndex;
   }
 
-  int match(CharSource input, int mode) {
+  int match(StringSource input, int mode) {
     match_calls++;
     _mode = mode;
     int mark = input.mark;
@@ -1364,18 +1369,18 @@ class LexerAtnSimulator extends AtnSimulator {
     _startIndex = -1;
     line = 1;
     charPositionInLine = 0;
-    _mode = Lexer._DEFAULT_MODE;
+    _mode = Lexer.DEFAULT_MODE;
   }
 
   Dfa getDfa(int mode) => decisionToDfa[mode];
 
   /// Get the text matched so far for the current token.
-  String getText(CharSource input) {
+  String getText(StringSource input) {
     // index is first lookahead char, don't include.
     return input.getText(Interval.of(_startIndex, input.index - 1));
   }
 
-  void consume(CharSource input) {
+  void consume(StringSource input) {
     int curChar = input.lookAhead(1);
     if (curChar == '\n'.codeUnitAt(0)) {
       line++;
@@ -1390,7 +1395,7 @@ class LexerAtnSimulator extends AtnSimulator {
     return (t == -1) ? "EOF" : "'${new String.fromCharCode(t)}'";
   }
 
-  int _matchAtn(CharSource input) {
+  int _matchAtn(StringSource input) {
     AtnState startState = atn.modeToStartState[_mode];
     int old_mode = _mode;
     AtnConfigSet s0_closure = _computeStartState(input, startState);
@@ -1402,7 +1407,7 @@ class LexerAtnSimulator extends AtnSimulator {
     return predict;
   }
 
-  int _execAtn(CharSource input, DfaState ds0) {
+  int _execAtn(StringSource input, DfaState ds0) {
     int token = input.lookAhead(1);
     DfaState state = ds0; // s is current/from DFA state
     while (true) { // while more work
@@ -1430,9 +1435,9 @@ class LexerAtnSimulator extends AtnSimulator {
       if (target == AtnSimulator.ERROR) break;
       if (target.isAcceptState) {
         _captureSimState(_prevAccept, input, target);
-        if (token == IntSource.EOF) break;
+        if (token == Token.EOF) break;
       }
-      if (token != IntSource.EOF) {
+      if (token != Token.EOF) {
         consume(input);
         token = input.lookAhead(1);
       }
@@ -1468,7 +1473,7 @@ class LexerAtnSimulator extends AtnSimulator {
   // Return the computed target DFA state for the given input symbol
   // t. If t does not lead to a valid DFA state, this method
   // returns ERROR.
-  DfaState _computeTargetState(CharSource input, DfaState s, int t) {
+  DfaState _computeTargetState(StringSource input, DfaState s, int t) {
     AtnConfigSet reach = new AtnConfigSet();
     // if we don't find an existing DFA state
     // Fill reach starting from closure, following t transitions
@@ -1487,9 +1492,9 @@ class LexerAtnSimulator extends AtnSimulator {
   }
 
   int _failOrAccept(_SimState prevAccept,
-                    CharSource input,
+                    StringSource input,
                     AtnConfigSet reach,
-                    int t) {
+                    int token) {
     if (prevAccept._dfaState != null) {
       var lexerActionExecutor = prevAccept._dfaState.lexerActionExecutor;
       _accept(input, lexerActionExecutor, _startIndex,
@@ -1497,7 +1502,7 @@ class LexerAtnSimulator extends AtnSimulator {
       return prevAccept._dfaState.prediction;
     } else {
       // if no accept and EOF is first char, return EOF
-      if (t == IntSource.EOF && input.index == _startIndex) return Token.EOF;
+      if (token == Token.EOF && input.index == _startIndex) return Token.EOF;
       throw new LexerNoViableAltException(_recog, input, _startIndex, reach);
     }
   }
@@ -1505,7 +1510,7 @@ class LexerAtnSimulator extends AtnSimulator {
   // Given a starting configuration set, figure out all ATN configurations
   // we can reach upon input token. Parameter reach is a return
   // parameter.
-  void _getReachableConfigSet(CharSource input,
+  void _getReachableConfigSet(StringSource input,
                               AtnConfigSet closure,
                               AtnConfigSet reach,
                               int token) {
@@ -1527,7 +1532,7 @@ class LexerAtnSimulator extends AtnSimulator {
           if (executor != null) {
             executor = executor.fixOffsetBeforeMatch(input.index - _startIndex);
           }
-          bool treatEofAsEpsilon = token == IntSource.EOF;
+          bool treatEofAsEpsilon = token == Token.EOF;
           if (_closure(input,
               new LexerAtnConfig.from(c, target, actionExecutor:executor),
               reach, currentAltReachedAcceptState, true, treatEofAsEpsilon)) {
@@ -1541,7 +1546,7 @@ class LexerAtnSimulator extends AtnSimulator {
     }
   }
 
-  void _accept(CharSource input,
+  void _accept(StringSource input,
                LexerActionExecutor lexerActionExecutor,
                int startIndex,
                int index,
@@ -1551,7 +1556,7 @@ class LexerAtnSimulator extends AtnSimulator {
     input.seek(index);
     this.line = line;
     charPositionInLine = charPos;
-    if (input.lookAhead(1) != IntSource.EOF) consume(input);
+    if (input.lookAhead(1) != Token.EOF) consume(input);
     if (lexerActionExecutor != null && _recog != null) {
       lexerActionExecutor.execute(_recog, input, startIndex);
     }
@@ -1564,7 +1569,7 @@ class LexerAtnSimulator extends AtnSimulator {
     return null;
   }
 
-  AtnConfigSet _computeStartState(CharSource input, AtnState state) {
+  AtnConfigSet _computeStartState(StringSource input, AtnState state) {
     PredictionContext initialContext = PredictionContext.EMPTY;
     AtnConfigSet configs = new AtnConfigSet();
     for (int i = 0; i< state.numberOfTransitions; i++) {
@@ -1582,7 +1587,7 @@ class LexerAtnSimulator extends AtnSimulator {
   // this rule would have a lower priority.
   //
   // Return true if an accept state is reached, otherwise false.
-  bool _closure(CharSource input,
+  bool _closure(StringSource input,
                 LexerAtnConfig config,
                 AtnConfigSet configs,
                 bool currentAltReachedAcceptState,
@@ -1601,10 +1606,10 @@ class LexerAtnSimulator extends AtnSimulator {
       }
       if (config.context != null && !config.context.isEmpty) {
         for (int i = 0; i < config.context.length; i++) {
-          if (config.context.getReturnState(i)
+          if (config.context.returnStateFor(i)
               != PredictionContext.EMPTY_RETURN_STATE) {
-            PredictionContext newContext = config.context.getParent(i);
-            AtnState returnState = atn.states[config.context.getReturnState(i)];
+            PredictionContext newContext = config.context.parentFor(i);
+            AtnState returnState = atn.states[config.context.returnStateFor(i)];
             LexerAtnConfig c = new LexerAtnConfig.from(
                 config, returnState, context:newContext);
             currentAltReachedAcceptState = _closure(input, c, configs,
@@ -1635,7 +1640,7 @@ class LexerAtnSimulator extends AtnSimulator {
   }
 
   // side-effect: can alter configs.hasSemanticContext
-  LexerAtnConfig _getEpsilonTarget(CharSource input,
+  LexerAtnConfig _getEpsilonTarget(StringSource input,
                                    LexerAtnConfig config,
                                    Transition transition,
                                    AtnConfigSet configs,
@@ -1696,7 +1701,7 @@ class LexerAtnSimulator extends AtnSimulator {
       case Transition.SET:
         if (treatEofAsEpsilon) {
           if (transition.matches(
-            IntSource.EOF, '\u0000'.codeUnitAt(0), '\uFFFF'.codeUnitAt(0))) {
+            Token.EOF, '\u0000'.codeUnitAt(0), '\uFFFF'.codeUnitAt(0))) {
             c = new LexerAtnConfig.from(config, transition.target);
             break;
           }
@@ -1724,20 +1729,20 @@ class LexerAtnSimulator extends AtnSimulator {
   // one character before the predicate's location.
   //
   // Return true if the specified predicate evaluates to true.
-  bool _evaluatePredicate(CharSource input,
+  bool _evaluatePredicate(StringSource input,
                           int ruleIndex,
                           int predIndex,
                           bool speculative) {
     // assume true if no recognizer was provided
     if (_recog == null) return true;
-    if (!speculative) return _recog.sempred(null, ruleIndex, predIndex);
+    if (!speculative) return _recog.semanticPredicate(null, ruleIndex, predIndex);
     int savedCharPositionInLine = charPositionInLine;
     int savedLine = line;
     int index = input.index;
     int marker = input.mark;
     try {
       consume(input);
-      return _recog.sempred(null, ruleIndex, predIndex);
+      return _recog.semanticPredicate(null, ruleIndex, predIndex);
     } finally {
       charPositionInLine = savedCharPositionInLine;
       line = savedLine;
@@ -1747,7 +1752,7 @@ class LexerAtnSimulator extends AtnSimulator {
   }
 
   void _captureSimState(_SimState settings,
-                        CharSource input,
+                        StringSource input,
                         DfaState dfaState) {
     settings
         .._index = input.index

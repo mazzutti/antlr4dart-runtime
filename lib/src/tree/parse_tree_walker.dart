@@ -4,35 +4,31 @@ class ParseTreeWalker {
 
   static final ParseTreeWalker DEFAULT = new ParseTreeWalker();
 
-  void walk(ParseTreeListener listener, ParseTree t) {
-    if (t is ErrorNode) {
-      listener.visitErrorNode(t);
+  void walk(ParseTreeListener listener, ParseTree tree) {
+    if (tree is ErrorNode) {
+      listener.visitErrorNode(tree);
       return;
-    } else if (t is TerminalNode) {
-      listener.visitTerminal(t);
+    } else if (tree is TerminalNode) {
+      listener.visitTerminal(tree);
       return;
     }
-    enterRule(listener, t);
-    int n = t.childCount;
-    for (int i = 0; i<n; i++) {
-      walk(listener, t.getChild(i));
+    enterRule(listener, tree);
+    int n = tree.childCount;
+    for (int i = 0; i < n; i++) {
+      walk(listener, tree.getChild(i));
     }
-    exitRule(listener, t);
+    exitRule(listener, tree);
   }
 
-  /// The discovery of a rule node, involves sending two events: the generic
-  /// [ParseTreeListener.enterEveryRule] and a [RuleContext]-specific event.
-  /// First we trigger the generic and then the rule specific. We to them
-  /// in reverse order upon finishing the node.
-  void enterRule(ParseTreeListener listener, RuleNode r) {
-    ParserRuleContext ctx = (r as ParserRuleContext).ruleContext;
-    listener.enterEveryRule(ctx);
-    ctx.enterRule(listener);
+  void enterRule(ParseTreeListener listener, RuleNode ruleNode) {
+    ParserRuleContext context = (ruleNode as ParserRuleContext).ruleContext;
+    listener.enterEveryRule(context);
+    context.enterRule(listener);
   }
 
-  void exitRule(ParseTreeListener listener, RuleNode r) {
-    ParserRuleContext ctx = (r as ParserRuleContext).ruleContext;
-    ctx.exitRule(listener);
-    listener.exitEveryRule(ctx);
+  void exitRule(ParseTreeListener listener, RuleNode ruleNode) {
+    ParserRuleContext context = (ruleNode as ParserRuleContext).ruleContext;
+    context.exitRule(listener);
+    listener.exitEveryRule(context);
   }
 }

@@ -95,7 +95,7 @@ class Predicate extends SemanticContext {
 
   bool eval(Recognizer parser, RuleContext outerContext) {
     RuleContext localctx = isCtxDependent ? outerContext : null;
-    return parser.sempred(localctx, ruleIndex, predIndex);
+    return parser.semanticPredicate(localctx, ruleIndex, predIndex);
   }
 
   int get hashCode {
@@ -253,12 +253,12 @@ class PrecedencePredicate extends SemanticContext
   int get hashCode => 31 + precedence;
 
   bool eval(Recognizer parser, RuleContext outerContext) {
-    return parser.precpred(outerContext, precedence);
+    return parser.precedencePredicate(outerContext, precedence);
   }
 
   SemanticContext evalPrecedence(Recognizer parser, RuleContext outerContext) {
     return parser
-        .precpred(outerContext, precedence) ? SemanticContext.NONE : null;
+        .precedencePredicate(outerContext, precedence) ? SemanticContext.NONE : null;
   }
 
   int compareTo(PrecedencePredicate other) => precedence - other.precedence;

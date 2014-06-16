@@ -42,16 +42,17 @@ class BitSet {
   bool _sizeIsSticky = false;
 
   /// Creates a bit set whose initial size is large enough to explicitly
-  /// represent bits with indices in the range `0` through
-  /// `nbits-1`. All bits are initially `false`.
+  /// represent bits with indices in the range `0` through `size - 1`. All
+  /// bits are initially `false`.
   ///
-  /// [nbits] the initial size of the bit set
-  /// Throws [ArgumentError] if the specified initial size is negative
-  BitSet([int nbits = _BITS_PER_WORD]) {
+  /// [size] the initial size of the bit set.
+  ///
+  /// An [ArgumentError] occurs when the specified initial size is negative.
+  BitSet([int size = _BITS_PER_WORD]) {
     // nbits can't be negative; size 0 is OK
-    if (nbits < 0)
-      throw new ArgumentError("nbits < 0: $nbits");
-    _initWords(nbits);
+    if (size < 0)
+      throw new ArgumentError("nbits < 0: $size");
+    _initWords(size);
     _sizeIsSticky = true;
   }
 
@@ -80,27 +81,26 @@ class BitSet {
   /// Return  a hash code value for this bit set.
   int get hashCode {
     Int64 h = new Int64(1234);
-    for (int i = _wordsInUse; --i >= 0; )
+    for (int i = _wordsInUse; --i >= 0;)
       h ^= _words[i] * (i + 1);
     return ((h >> 32) ^ h).toInt();
   }
 
-  /// Returns the "logical size" of this `BitSet`: the index of
-  /// the highest set bit in the `BitSet` plus one. Returns zero
-  /// if the `BitSet` contains no set bits.
+  /// Returns the "logical size" of this [BitSet]: the index of the highest
+  /// set bit in the [BitSet] plus one. Returns zero if the [BitSet] contains
+  /// no set bits.
   ///
-  /// Return the logical size of this `BitSet`
+  /// Return the logical size of this [BitSet].
   int get length {
     if (_wordsInUse == 0) return 0;
     return _BITS_PER_WORD * (_wordsInUse - 1) +
       (_BITS_PER_WORD - _words[_wordsInUse - 1].numberOfLeadingZeros());
   }
 
-  /// Returns true if this `BitSet` contains no bits that are set
-  /// to `true`.
+  /// Returns true if this [BitSet] contains no bits that are set to `true`.
   bool get isEmpty => _wordsInUse == 0;
 
-  /// Returns the number of bits set to `true` in this `BitSet`.
+  /// Returns the number of bits set to `true` in this [BitSet].
   int get cardinality {
     int sum = 0;
     for (int i = 0; i < _wordsInUse; i++)
@@ -111,11 +111,11 @@ class BitSet {
   /// Sets the bit at the specified index to the specified `value`.
   ///
   /// [bitIndex] is a bit index.
-  /// Throws [RangeError] if the specified index is negative.
+  ///
+  /// A [RangeError] occurs when the specified index is negative.
   void set(int bitIndex, [bool value = false]) {
     if (value) {
-      if (bitIndex < 0)
-        throw new RangeError("bitIndex < 0: $bitIndex");
+      if (bitIndex < 0) throw new RangeError("bitIndex < 0: $bitIndex");
       int wordIndex = _wordIndex(bitIndex);
       _expandTo(wordIndex);
       _words[wordIndex] |= (1 << bitIndex); // Restores invariants
@@ -127,11 +127,11 @@ class BitSet {
 
   /// Sets the bit specified by the index to `false`.
   ///
-  /// [bitIndex] is the index of the bit to be cleared
-  /// Throws [RangeError] if the specified index is negative.
+  /// [bitIndex] is the index of the bit to be cleared.
+  ///
+  /// A [RangeError] occurs when the specified index is negative.
   void clear(int bitIndex) {
-    if (bitIndex < 0)
-        throw new RangeError("bitIndex < 0: $bitIndex");
+    if (bitIndex < 0) throw new RangeError("bitIndex < 0: $bitIndex");
     int wordIndex = _wordIndex(bitIndex);
     if (wordIndex >= _wordsInUse) return;
     _words[wordIndex] &= ~(1 << bitIndex);
@@ -139,27 +139,26 @@ class BitSet {
     _checkInvariants();
   }
 
-  /// Returns the value of the bit with the specified index. The value
-  /// is `true` if the bit with the index `bitIndex` is currently set
-  /// in this `BitSet`; otherwise, the result is `false`.
+  /// Returns the value of the bit with the specified index. The value is
+  /// `true` if the bit with the index [bitIndex] is currently set in this
+  /// [BitSet]; otherwise, the result is `false`.
   ///
   /// [bitIndex] is the bit index
-  /// Return the value of the bit with the specified index.
-  /// Throws [RangeError] if the specified index is negative.
+  ///
+  /// A [RangeError] occurs when the specified index is negative.
   bool get(int bitIndex) {
-    if (bitIndex < 0)
-      throw new RangeError("bitIndex < 0: $bitIndex");
+    if (bitIndex < 0) throw new RangeError("bitIndex < 0: $bitIndex");
     _checkInvariants();
     int wordIndex = _wordIndex(bitIndex);
     return (wordIndex < _wordsInUse)
       && ((_words[wordIndex] & (1 << bitIndex)) != 0);
   }
 
-  /// Returns the index of the first bit that is set to `true`
-  /// that occurs on or after the specified starting index. If no such
-  /// bit exists then `code -1` is returned.
+  /// Returns the index of the first bit that is set to `true` that occurs on
+  /// or after the specified starting index. If no such bit exists then
+  /// `code -1` is returned.
   ///
-  /// To iterate over the `true` bits in a `BitSet`,
+  /// To iterate over the `true` bits in a [BitSet],
   /// use the following loop:
   ///
   ///      for (int i = bs.nextSetBit(0); i >= 0; i = bs.nextSetBit(i+1)) {
@@ -167,95 +166,89 @@ class BitSet {
   ///      }
   ///
   /// [fromIndex] is the index to start checking from (inclusive).
-  /// Return the index of the next set bit, or `code -1` if there is no such bit.
-  /// Throws [RangeError] if the specified index is negative.
+  ///
+  /// A [RangeError] occurs when the specified index is negative.
   int nextSetBit(int fromIndex) {
-    if (fromIndex < 0)
-      throw new RangeError("fromIndex < 0: $fromIndex");
+    if (fromIndex < 0) throw new RangeError("fromIndex < 0: $fromIndex");
     _checkInvariants();
     int u = _wordIndex(fromIndex);
     if (u >= _wordsInUse) return -1;
     Int64 word = _words[u] & (_WORD_MASK << fromIndex);
     while (true) {
-      if (word != 0)
-        return (u * _BITS_PER_WORD) + word.numberOfTrailingZeros();
-      if (++u == _wordsInUse)
-        return -1;
+      if (word != 0) return (u * _BITS_PER_WORD) + word.numberOfTrailingZeros();
+      if (++u == _wordsInUse) return -1;
       word = _words[u];
     }
   }
 
-  /// Returns the index of the first bit that is set to `false`
-  /// that occurs on or after the specified starting index.
+  /// Returns the index of the first bit that is set to `false` that occurs on
+  /// or after the specified starting index.
   ///
   /// [fromIndex] is the index to start checking from (inclusive)
-  /// Return the index of the next clear bit.
-  /// Throws [RangeError] if the specified index is negative
+  ///
+  /// A [RangeError] occurs when the specified index is negative.
   int nextClearBit(int fromIndex) {
-    if (fromIndex < 0)
-      throw new RangeError("fromIndex < 0: $fromIndex");
+    if (fromIndex < 0) throw new RangeError("fromIndex < 0: $fromIndex");
     _checkInvariants();
     int u = _wordIndex(fromIndex);
     if (u >= _wordsInUse) return fromIndex;
     Int64 word = ~_words[u] & (_WORD_MASK << fromIndex);
     while (true) {
-      if (word != 0)
-        return (u * _BITS_PER_WORD) + word.numberOfTrailingZeros();
-      if (++u == _wordsInUse)
-        return _wordsInUse * _BITS_PER_WORD;
+      if (word != 0) return (u * _BITS_PER_WORD) + word.numberOfTrailingZeros();
+      if (++u == _wordsInUse) return _wordsInUse * _BITS_PER_WORD;
       word = ~_words[u];
     }
   }
 
-  /// Performs a logical **OR** of this bit set with the bit set
-  /// argument. This bit set is modified so that a bit in it has the
-  /// value `true` if and only if it either already had the
-  /// value `true` or the corresponding bit in the bit set
-  /// argument has the value `true`.
-  void or(BitSet set) {
-    if (this == set) return;
-    int wordsInCommon = min(_wordsInUse, set._wordsInUse);
-    if (_wordsInUse < set._wordsInUse) {
-      _ensureCapacity(set._wordsInUse);
-      _wordsInUse = set._wordsInUse;
+  /// Performs a logical **OR** of this bit set with the bit set argument.
+  ///
+  /// This [BitSet] is modified so that a bit in it has the value `true` if
+  /// and only if it either already had the value `true` or the corresponding
+  /// bit in the bit set argument has the value `true`.
+  void or(BitSet bitSet) {
+    if (this == bitSet) return;
+    int wordsInCommon = min(_wordsInUse, bitSet._wordsInUse);
+    if (_wordsInUse < bitSet._wordsInUse) {
+      _ensureCapacity(bitSet._wordsInUse);
+      _wordsInUse = bitSet._wordsInUse;
     }
     // Perform logical OR on words in common
     for (int i = 0; i < wordsInCommon; i++)
-      _words[i] |= set._words[i];
+      _words[i] |= bitSet._words[i];
     // Copy any remaining words
-    if (wordsInCommon < set._wordsInUse)
+    if (wordsInCommon < bitSet._wordsInUse)
       _words.setRange(wordsInCommon,
-          _wordsInUse - wordsInCommon, set._words, wordsInCommon);
+          _wordsInUse - wordsInCommon, bitSet._words, wordsInCommon);
     _checkInvariants();
   }
 
   /// Compares this object against the specified object.
-  /// The result is `true` if and only if the argument is
-  /// not `null` and is a `Bitset` object that has
-  /// exactly the same set of bits set to `true` as this bit
-  /// set. That is, for every nonnegative `int` index `k`,
-  /// `(obj as BitSet).get(k) == this.get(k)`
-  /// must be true. The current sizes of the two bit sets are not compared.
   ///
-  /// [obj] is the the object to compare with
+  /// The result is `true` if and only if the argument is not `null` and is
+  /// a [Bitset] object that has exactly the same set of bits set to `true`
+  /// as this bit set. That is, for every nonnegative `int` index `k`,
+  /// `(other as BitSet).get(k) == this.get(k)` must be true. The current
+  /// sizes of the two bit sets are not compared.
+  ///
+  /// [other] is the the object to compare with.
+  ///
   /// Return `true` if the objects are the same;`false` otherwise.
-  bool operator==(Object obj) {
-    if (obj is! BitSet) return false;
-    BitSet set = obj;
+  bool operator==(Object other) {
+    if (other is! BitSet) return false;
+    BitSet set = other;
     _checkInvariants();
     set._checkInvariants();
-    if (_wordsInUse != set._wordsInUse)
-      return false;
+    if (_wordsInUse != set._wordsInUse) return false;
     // Check words in use by both BitSets
     for (int i = 0; i < _wordsInUse; i++)
-      if (_words[i] != set._words[i])
-          return false;
+      if (_words[i] != set._words[i]) return false;
     return true;
   }
 
-  /// Returns a string representation of this bit set. For every index
-  /// for which this `BitSet` contains a bit in the set state, the
-  /// decimal representation of that index is included in the result.
+  /// Returns a string representation of this bit set.
+  ///
+  /// For every index for which this [BitSet] contains a bit in the set state,
+  /// the decimal representation of that index is included in the result.
   /// Such indices are listed in order from lowest to highest, separated
   /// by ",&nbsp;" (a comma and a space) and surrounded by braces,
   /// resulting in the usual mathematical notation for a set of integers.
@@ -278,21 +271,25 @@ class BitSet {
   /// Return a string representation of this bit set.
   String toString() {
     _checkInvariants();
-    int numBits = (_wordsInUse > 128) ?
-      cardinality : _wordsInUse * _BITS_PER_WORD;
-    StringBuffer b = new StringBuffer('{');
+    int numBits = (_wordsInUse > 128)
+        ? cardinality
+        : _wordsInUse * _BITS_PER_WORD;
+    StringBuffer sb = new StringBuffer('{');
     int i = nextSetBit(0);
     if (i != -1) {
-      b.write(i);
+      sb.write(i);
       for (i = nextSetBit(i+1); i >= 0; i = nextSetBit(i+1)) {
         int endOfRun = nextClearBit(i);
-        do { b..write(", ")..write(i); }
-        while (++i < endOfRun);
+        do {
+          sb
+              ..write(", ")
+              ..write(i);
+        } while (++i < endOfRun);
       }
     }
 
-    b.write('}');
-    return b.toString();
+    sb.write('}');
+    return sb.toString();
   }
 
   void _initWords(int nbits) {
@@ -300,9 +297,7 @@ class BitSet {
   }
 
   // Given a bit index, return word index containing it.
-  static int _wordIndex(int bitIndex) {
-    return bitIndex >> _ADDRESS_BITS_PER_WORD;
-  }
+  static int _wordIndex(int bitIndex) => bitIndex >> _ADDRESS_BITS_PER_WORD;
 
   // Every public method must preserve these invariants.
   void _checkInvariants() {

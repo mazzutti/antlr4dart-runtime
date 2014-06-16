@@ -43,7 +43,7 @@ abstract class LexerAction {
   LexerActionType get actionType;
 
   /// Gets whether the lexer action is position-dependent. Position-dependent
-  /// actions may have different semantics depending on the [CharSource]
+  /// actions may have different semantics depending on the [StringSource]
   /// index at the time the action is executed.
   ///
   /// Many lexer commands, including `type`, `skip`, and `more`, do not check
@@ -52,7 +52,7 @@ abstract class LexerAction {
   /// [LexerAtnConfig.lexerActionExecutor].
   ///
   /// This is `true` if the lexer action semantics can be affected by the
-  /// position of the input [CharSource] at the time it is executed;
+  /// position of the input [StringSource] at the time it is executed;
   /// otherwise, `false`.
   bool get isPositionDependent;
 
@@ -335,7 +335,7 @@ class LexerCustomAction implements LexerAction {
   LexerActionType get actionType => LexerActionType.CUSTOM;
 
   /// Gets whether the lexer action is position-dependent. Position-dependent
-  /// actions may have different semantics depending on the [CharSource]
+  /// actions may have different semantics depending on the [StringSource]
   /// index at the time the action is executed.
   ///
   /// Custom actions are position-dependent since they may represent a
@@ -376,7 +376,7 @@ class LexerCustomAction implements LexerAction {
 /// [LexerActionExecutor.fixOffsetBeforeMatch].
 class LexerIndexedCustomAction implements LexerAction {
 
-  /// the location in the input [CharSource] at which the lexer
+  /// the location in the input [StringSource] at which the lexer
   /// action should be executed. The value is interpreted as an offset
   /// relative to the token start index.
   final int offset;
@@ -390,11 +390,11 @@ class LexerIndexedCustomAction implements LexerAction {
   /// Note: This class is only required for lexer actions for which
   /// [LexerAction.isPositionDependent] returns `true`.
   ///
-  /// [offset] is the offset into the input [CharSource], relative to
+  /// [offset] is the offset into the input [StringSource], relative to
   /// the token start index, at which the specified lexer action should be
   /// executed.
   /// [action] is the lexer action to execute at a particular offset in the
-  /// input [CharSource].
+  /// input [StringSource].
   LexerIndexedCustomAction(this.offset, this.action);
 
   /// The result of access the [actionType] getter on the [LexerAction]
@@ -478,7 +478,7 @@ class LexerActionExecutor {
   ///
   /// Normally, when the executor encounters lexer actions where
   /// [LexerAction.isPositionDependent] returns `true`, it calls
-  /// [IntSource.seek] on the input [CharSource] to set the input
+  /// [InputSource.seek] on the input [StringSource] to set the input
   /// position to the **end** of the current token. This behavior provides
   /// for efficient DFA representation of lexer actions which appear at the end
   /// of a lexer rule, even when the lexer rule matches a variable number of
@@ -533,7 +533,7 @@ class LexerActionExecutor {
   /// [startIndex] is the token start index. This value may be passed to
   /// [IntSource.seek] to set the [input] position to the beginning
   /// of the token.
-  void execute(Lexer lexer, CharSource input, int startIndex) {
+  void execute(Lexer lexer, StringSource input, int startIndex) {
     bool requiresSeek = false;
     int stopIndex = input.index;
     try {

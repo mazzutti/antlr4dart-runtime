@@ -2,21 +2,18 @@ part of antlr4dart;
 
 abstract class Recognizer<T, AtnInterpreter extends AtnSimulator> {
 
-  static const int EOF = -1;
-
   List<ErrorListener> _listeners;
 
-  static final _tokenTypeMapCache = new HashMap<List<String>, Map<String, int>>();
-  static final _ruleIndexMapCache = new HashMap<List<String>, Map<String, int>>();
+  static final _tokenTypeMapCache = new HashMap();
+  static final _ruleIndexMapCache = new HashMap();
 
   AtnInterpreter interpreter;
 
   /// Indicate that the recognizer has changed internal state that is
-  /// consistent with the ATN state passed in.  This way we always know
-  /// where we are in the ATN as the parser goes along. The rule
-  /// context objects form a stack that lets us see the stack of
-  /// invoking rules. Combine this and we have complete ATN
-  /// configuration information.
+  /// consistent with the ATN state passed in. This way we always know
+  /// where we are in the ATN as the parser goes along. The rule context
+  /// objects form a stack that lets us see the stack of invoking rules.
+  /// Combine this and we have complete ATN configuration information.
   int state = -1;
 
   Recognizer() {
@@ -31,9 +28,9 @@ abstract class Recognizer<T, AtnInterpreter extends AtnSimulator> {
 
   List<String> get ruleNames;
 
-  IntSource get inputSource;
+  InputSource get inputSource;
 
-  void set inputSource(IntSource input);
+  void set inputSource(InputSource input);
 
   TokenFactory get tokenFactory;
 
@@ -51,38 +48,13 @@ abstract class Recognizer<T, AtnInterpreter extends AtnSimulator> {
     return new ProxyErrorListener(errorListeners);
   }
 
-  /// What is the error header, normally line/character position information?
-  String getErrorHeader(RecognitionException e) {
-    int line = e.offendingToken.line;
-    int charPositionInLine = e.offendingToken.charPositionInLine;
-    return "line $line:$charPositionInLine";
-  }
-
-  /// How should a token be displayed in an error message? The default
-  /// is to display just the text, but during development you might
-  /// want to have a lot of information spit out.  Override in that case
-  /// to use t.toString() (which, for CommonToken, dumps everything about
-  /// the token). This is better than forcing you to override a method in
-  /// your token objects because you don't have to go modify your lexer
-  /// so that it creates a new Java type.
-  String getTokenErrorDisplay(Token t) {
-    if (t == null) return "<no token>";
-    String s = t.text;
-    if (s == null) {
-      s = (t.type == Token.EOF) ? "<EOF>":"<${t.type}>";
-    }
-    s = s.replaceAll("\n","\\n");
-    s = s.replaceAll("\r","\\r");
-    s = s.replaceAll("\t","\\t");
-    return "'$s'";
-  }
-
   /// Get a map from token names to token types.
   ///
   /// Used for tree pattern compilation.
   Map<String, int> get tokenTypeMap {
     if (tokenNames == null) {
-      throw new UnsupportedError("The current recognizer does not provide a list of token names.");
+      throw new UnsupportedError(
+          "The current recognizer does not provide a list of token names.");
     }
     Map<String, int> result = _tokenTypeMapCache[tokenNames];
     if (result == null) {
@@ -102,7 +74,8 @@ abstract class Recognizer<T, AtnInterpreter extends AtnSimulator> {
   /// Used for tree pattern compilation.
   Map<String, int> get ruleIndexMap {
     if (ruleNames == null) {
-      throw new UnsupportedError("The current recognizer does not provide a list of rule names.");
+      throw new UnsupportedError(
+          "The current recognizer does not provide a list of rule names.");
     }
     Map<String, int> result = _ruleIndexMapCache[ruleNames];
     if (result == null) {
@@ -116,10 +89,36 @@ abstract class Recognizer<T, AtnInterpreter extends AtnSimulator> {
     return result;
   }
 
+  /// What is the error header, normally line/character position information?
+  String getErrorHeader(RecognitionException exception) {
+    int line = exception.offendingToken.line;
+    int charPositionInLine = exception.offendingToken.charPositionInLine;
+    return "line $line:$charPositionInLine";
+  }
+
+  /// How should a token be displayed in an error message?
+  ///
+  /// The default is to display just the text, but during development you might
+  /// want to have a lot of information spit out. Override in that case
+  /// to use [token].toString() (which, for [CommonToken], dumps everything
+  /// about the token). This is better than forcing you to override a method in
+  /// your token objects because you don't have to go modify your lexer
+  /// so that it creates a new Dart type.
+  String getTokenErrorDisplay(Token token) {
+    if (token == null) return "<no token>";
+    String s = token.text;
+    if (s == null) {
+      s = (token.type == Token.EOF) ? "<EOF>":"<${token.type}>";
+    }
+    s = s.replaceAll("\n","\\n");
+    s = s.replaceAll("\r","\\r");
+    s = s.replaceAll("\t","\\t");
+    return "'$s'";
+  }
+
   int getTokenType(String tokenName) {
     int ttype = tokenTypeMap[tokenName];
-    if (ttype != null) return ttype;
-    return Token.INVALID_TYPE;
+    return ttype != null ? ttype : Token.INVALID_TYPE;
   }
 
   /// If this recognizer was generated, it will have a serialized ATN
@@ -131,7 +130,7 @@ abstract class Recognizer<T, AtnInterpreter extends AtnSimulator> {
     throw new UnsupportedError("there is no serialized ATN");
   }
 
-  /// Throws [NullThrownError] if `listener` is `null`.
+  /// Throws [NullThrownError] if [listener] is `null`.
   void addErrorListener(ErrorListener listener) {
     if (listener == null) throw new NullThrownError();
     _listeners.add(listener);
@@ -145,15 +144,13 @@ abstract class Recognizer<T, AtnInterpreter extends AtnSimulator> {
     _listeners.clear();
   }
 
-  // subclass needs to override these if there are sempreds or actions
-  // that the ATN interp needs to execute
-  bool sempred(RuleContext _localctx, int ruleIndex, int actionIndex) {
-    return true;
-  }
+  /// Subclass needs to override these if there are sempreds or actions that
+  /// the ATN interpreter needs to execute.
+  bool semanticPredicate(RuleContext localContext,
+                         int ruleIndex,
+                         int actionIndex) => true;
 
-  bool precpred(RuleContext localctx, int precedence) {
-    return true;
-  }
+  bool precedencePredicate(RuleContext localContext, int precedence) => true;
 
-  void action(RuleContext _localctx, int ruleIndex, int actionIndex) {}
+  void action(RuleContext localContext, int ruleIndex, int actionIndex) {}
 }

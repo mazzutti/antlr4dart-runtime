@@ -105,28 +105,23 @@ class Atn {
     if (stateNumber < 0 || stateNumber >= states.length) {
       throw new ArgumentError("Invalid state number.");
     }
-    RuleContext ctx = context;
     AtnState s = states[stateNumber];
     IntervalSet following = nextTokensInSameRule(s);
-    if (!following.contains(Token.EPSILON)) {
-      return following;
-    }
+    if (!following.contains(Token.EPSILON)) return following;
     IntervalSet expected = new IntervalSet()
         ..addAll(following)
         ..remove(Token.EPSILON);
-    while (ctx != null && ctx.invokingState >= 0
+    while (context != null && context.invokingState >= 0
         && following.contains(Token.EPSILON)) {
-      AtnState invokingState = states[ctx.invokingState];
+      AtnState invokingState = states[context.invokingState];
       RuleTransition rt = invokingState.getTransition(0);
       following = nextTokensInSameRule(rt.followState);
       expected
           ..addAll(following)
           ..remove(Token.EPSILON);
-      ctx = ctx.parent;
+      context = context.parent;
     }
-    if (following.contains(Token.EPSILON)) {
-      expected.addSingle(Token.EOF);
-    }
+    if (following.contains(Token.EPSILON))  expected.addSingle(Token.EOF);
     return expected;
   }
 }
