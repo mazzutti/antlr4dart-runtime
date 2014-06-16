@@ -29,20 +29,6 @@ abstract class Transition {
       "ACTION", "SET", "NOT_SET", "WILDCARD", "PRECEDENCE"
     ];
 
-  static const Map<Type, int> serializationTypes =
-    const <Type, int>{
-      EpsilonTransition: EPSILON,
-      RangeTransition: RANGE,
-      RuleTransition: RULE,
-      PredicateTransition: PREDICATE,
-      AtomTransition: ATOM,
-      ActionTransition: ACTION,
-      SetTransition: SET,
-      NotSetTransition: NOT_SET,
-      WildcardTransition: WILDCARD,
-      PrecedencePredicateTransition: PRECEDENCE
-    };
-
   /// The target of this transition.
   AtnState target;
 
