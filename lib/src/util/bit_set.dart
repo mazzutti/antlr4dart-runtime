@@ -20,40 +20,13 @@ part of antlr4dart;
 /// methods in a `BitSet` will result in a [NullThrownError].
 ///
 class BitSet {
-  // BitSets are packed into arrays of "words."  Currently a word is
-  // an int, which consists of 64 bits, requiring 2 address bits.
-  static const int _ADDRESS_BITS_PER_WORD = 6;
-  static const int _BITS_PER_WORD = 1 << _ADDRESS_BITS_PER_WORD;
-  static const int _BIT_INDEX_MASK = _BITS_PER_WORD - 1;
 
-  // Used to shift left or right for a partial word mask.
-  static final Int64 _WORD_MASK = Int64.parseHex("ffffffffffffffff");
+  // The bits in this BitSet.
+  BigInteger _word;
 
-  // The bits in this BitSet.  The ith bit is stored in bits[i/64] at
-  // bit position i % 64 (where bit position 0 refers to the least
-  // significant bit and 63 refers to the most significant bit).
-  List<Int64> _words;
-
-  // The number of words in the logical size of this BitSet.
-  int _wordsInUse = 0;
-
-  // Whether the size of "words" is user-specified.  If so, we assume
-  // the user knows what he's doing and try harder to preserve it.
-  bool _sizeIsSticky = false;
-
-  /// Creates a bit set whose initial size is large enough to explicitly
-  /// represent bits with indices in the range `0` through `size - 1`. All
-  /// bits are initially `false`.
-  ///
-  /// [size] the initial size of the bit set.
-  ///
-  /// An [ArgumentError] occurs when the specified initial size is negative.
-  BitSet([int size = _BITS_PER_WORD]) {
-    // nbits can't be negative; size 0 is OK
-    if (size < 0)
-      throw new ArgumentError("nbits < 0: $size");
-    _initWords(size);
-    _sizeIsSticky = true;
+  /// Creates an empty bit set.
+  BitSet() {
+    _word = BigInteger.ZERO;
   }
 
   /// Returns a hash code value for this bit set. The hash code
@@ -61,29 +34,19 @@ class BitSet {
   /// `BitSet`. The algorithm used to compute it may be described
   /// as follows.
   ///
-  /// Suppose the bits in the `BitSet` were to be stored
-  /// in a list of [Int64] elements called, say, `words`, in
-  /// such a manner that bit `k` is set in the `BitSet` (for
-  /// nonnegative values of `k`) if and only if the expression
-  /// `((k >> 6) < words.length) && ((words[k >> 6] & (1 < (bit & 0x3F))) != 0)`
-  /// is true. Then the following definition of the `hashCode`
-  /// method would be a correct implementation of the actual algorithm:
-  ///
   ///     int get hashCode {
-  ///       int h = 1234;
-  ///       for (int i = words.length; --i >= 0;) {
-  ///         h ^= words[i] * (i + 1);
-  ///       }
-  ///       return (int)((h >> 32) ^ h);
+  ///       var h = new BigInteger(1234);
+  ///       h ^= _word;
+  ///       return ((h >> 32) ^ h).intValue();
+  ///     }
   ///
   /// Note that the hash code values change if the set of bits is altered.
   ///
   /// Return  a hash code value for this bit set.
   int get hashCode {
-    Int64 h = new Int64(1234);
-    for (int i = _wordsInUse; --i >= 0;)
-      h ^= _words[i] * (i + 1);
-    return ((h >> 32) ^ h).toInt();
+    var h = new BigInteger(1234);
+    h ^= _word;
+    return ((h >> 32) ^ h).intValue();
   }
 
   /// Returns the "logical size" of this [BitSet]: the index of the highest
@@ -91,24 +54,15 @@ class BitSet {
   /// no set bits.
   ///
   /// Return the logical size of this [BitSet].
-  int get length {
-    if (_wordsInUse == 0) return 0;
-    return _BITS_PER_WORD * (_wordsInUse - 1) +
-      (_BITS_PER_WORD - _words[_wordsInUse - 1].numberOfLeadingZeros());
-  }
+  int get length => _word.bitLength();
 
   /// Returns true if this [BitSet] contains no bits that are set to `true`.
-  bool get isEmpty => _wordsInUse == 0;
+  bool get isEmpty => _word == BigInteger.ZERO;
 
   /// Returns the number of bits set to `true` in this [BitSet].
-  int get cardinality {
-    int sum = 0;
-    for (int i = 0; i < _wordsInUse; i++)
-      sum += _bitCount(_words[i]);
-    return sum;
-  }
+  int get cardinality => _word.bitCount();
 
-  /// Sets the bit at the specified index to the specified `value`.
+  /// Sets the bit at the specified index to the specified [value].
   ///
   /// [bitIndex] is a bit index.
   ///
@@ -116,10 +70,7 @@ class BitSet {
   void set(int bitIndex, [bool value = false]) {
     if (value) {
       if (bitIndex < 0) throw new RangeError("bitIndex < 0: $bitIndex");
-      int wordIndex = _wordIndex(bitIndex);
-      _expandTo(wordIndex);
-      _words[wordIndex] |= (1 << bitIndex); // Restores invariants
-      _checkInvariants();
+      _word = _word.setBit(bitIndex);
     } else {
       clear(bitIndex);
     }
@@ -132,11 +83,7 @@ class BitSet {
   /// A [RangeError] occurs when the specified index is negative.
   void clear(int bitIndex) {
     if (bitIndex < 0) throw new RangeError("bitIndex < 0: $bitIndex");
-    int wordIndex = _wordIndex(bitIndex);
-    if (wordIndex >= _wordsInUse) return;
-    _words[wordIndex] &= ~(1 << bitIndex);
-    _recalculateWordsInUse();
-    _checkInvariants();
+    _word = _word.clearBit(bitIndex);
   }
 
   /// Returns the value of the bit with the specified index. The value is
@@ -148,10 +95,7 @@ class BitSet {
   /// A [RangeError] occurs when the specified index is negative.
   bool get(int bitIndex) {
     if (bitIndex < 0) throw new RangeError("bitIndex < 0: $bitIndex");
-    _checkInvariants();
-    int wordIndex = _wordIndex(bitIndex);
-    return (wordIndex < _wordsInUse)
-      && ((_words[wordIndex] & (1 << bitIndex)) != 0);
+    return _word.testBit(bitIndex);
   }
 
   /// Returns the index of the first bit that is set to `true` that occurs on
@@ -170,15 +114,11 @@ class BitSet {
   /// A [RangeError] occurs when the specified index is negative.
   int nextSetBit(int fromIndex) {
     if (fromIndex < 0) throw new RangeError("fromIndex < 0: $fromIndex");
-    _checkInvariants();
-    int u = _wordIndex(fromIndex);
-    if (u >= _wordsInUse) return -1;
-    Int64 word = _words[u] & (_WORD_MASK << fromIndex);
-    while (true) {
-      if (word != 0) return (u * _BITS_PER_WORD) + word.numberOfTrailingZeros();
-      if (++u == _wordsInUse) return -1;
-      word = _words[u];
+    var size = _word.bitLength();
+    for (int i = fromIndex; i < size;i++) {
+      if (_word.testBit(i)) return i;
     }
+    return -1;
   }
 
   /// Returns the index of the first bit that is set to `false` that occurs on
@@ -189,15 +129,11 @@ class BitSet {
   /// A [RangeError] occurs when the specified index is negative.
   int nextClearBit(int fromIndex) {
     if (fromIndex < 0) throw new RangeError("fromIndex < 0: $fromIndex");
-    _checkInvariants();
-    int u = _wordIndex(fromIndex);
-    if (u >= _wordsInUse) return fromIndex;
-    Int64 word = ~_words[u] & (_WORD_MASK << fromIndex);
-    while (true) {
-      if (word != 0) return (u * _BITS_PER_WORD) + word.numberOfTrailingZeros();
-      if (++u == _wordsInUse) return _wordsInUse * _BITS_PER_WORD;
-      word = ~_words[u];
+    var size = _word.bitLength();
+    for (int i = fromIndex; i < size;i++) {
+      if (!_word.testBit(i)) return i;
     }
+    return -1;
   }
 
   /// Performs a logical **OR** of this bit set with the bit set argument.
@@ -206,20 +142,7 @@ class BitSet {
   /// and only if it either already had the value `true` or the corresponding
   /// bit in the bit set argument has the value `true`.
   void or(BitSet bitSet) {
-    if (this == bitSet) return;
-    int wordsInCommon = min(_wordsInUse, bitSet._wordsInUse);
-    if (_wordsInUse < bitSet._wordsInUse) {
-      _ensureCapacity(bitSet._wordsInUse);
-      _wordsInUse = bitSet._wordsInUse;
-    }
-    // Perform logical OR on words in common
-    for (int i = 0; i < wordsInCommon; i++)
-      _words[i] |= bitSet._words[i];
-    // Copy any remaining words
-    if (wordsInCommon < bitSet._wordsInUse)
-      _words.setRange(wordsInCommon,
-          _wordsInUse - wordsInCommon, bitSet._words, wordsInCommon);
-    _checkInvariants();
+    if (this != bitSet) _word |= bitSet._word;
   }
 
   /// Compares this object against the specified object.
@@ -234,15 +157,7 @@ class BitSet {
   ///
   /// Return `true` if the objects are the same;`false` otherwise.
   bool operator==(Object other) {
-    if (other is! BitSet) return false;
-    BitSet set = other;
-    _checkInvariants();
-    set._checkInvariants();
-    if (_wordsInUse != set._wordsInUse) return false;
-    // Check words in use by both BitSets
-    for (int i = 0; i < _wordsInUse; i++)
-      if (_words[i] != set._words[i]) return false;
-    return true;
+    return other is BitSet ? _word == other._word : false;
   }
 
   /// Returns a string representation of this bit set.
@@ -259,21 +174,17 @@ class BitSet {
   ///
   /// Now `drPepper.toString()` returns `"{}"`.
   ///
-  ///     drPepper.set(2);
+  ///     drPepper.set(2, true);
   ///
   /// Now  `drPepper.toString()` returns `"{2}"`.
   ///
-  ///     drPepper.set(4);
-  ///     drPepper.set(10);
+  ///     drPepper.set(4, true);
+  ///     drPepper.set(10, true);
   ///
   /// Now `drPepper.toString()` returns `"{2, 4, 10}"`.
   ///
   /// Return a string representation of this bit set.
   String toString() {
-    _checkInvariants();
-    int numBits = (_wordsInUse > 128)
-        ? cardinality
-        : _wordsInUse * _BITS_PER_WORD;
     StringBuffer sb = new StringBuffer('{');
     int i = nextSetBit(0);
     if (i != -1) {
@@ -287,79 +198,7 @@ class BitSet {
         } while (++i < endOfRun);
       }
     }
-
     sb.write('}');
     return sb.toString();
-  }
-
-  void _initWords(int nbits) {
-    _words = new List<Int64>.filled(_wordIndex(nbits - 1) + 1, Int64.ZERO);
-  }
-
-  // Given a bit index, return word index containing it.
-  static int _wordIndex(int bitIndex) => bitIndex >> _ADDRESS_BITS_PER_WORD;
-
-  // Every public method must preserve these invariants.
-  void _checkInvariants() {
-    assert(_wordsInUse == 0 || _words[_wordsInUse - 1] != 0);
-    assert(_wordsInUse >= 0 && _wordsInUse <= _words.length);
-    assert(_wordsInUse == _words.length || _words[_wordsInUse] == 0);
-  }
-
-  // Sets the field wordsInUse to the logical size in words of the bit set.
-  // WARNING:This method assumes that the number of words actually in use is
-  // less than or equal to the current value of _wordsInUse!
-  void _recalculateWordsInUse() {
-    // Traverse the bitset until a used word is found
-    int i;
-    for (i = _wordsInUse - 1; i >= 0; i--)
-      if (_words[i] != 0) break;
-    _wordsInUse = i + 1; // The new logical size
-  }
-
-  // Ensures that the BitSet can hold enough words.
-  // wordsRequired is the minimum acceptable number of words.
-  void _ensureCapacity(int wordsRequired) {
-    if (_words.length < wordsRequired) {
-      // Allocate larger of doubled size or required size
-      int request = max(2 * _words.length, wordsRequired);
-      List<Int64> temp = new List<Int64>.filled(request, Int64.ZERO);
-      temp.setRange(0, _words.length, _words);
-      _words = temp;
-      _sizeIsSticky = false;
-    }
-  }
-
-  // Ensures that the BitSet can accommodate a given wordIndex,
-  // temporarily violating the invariants.  The caller must
-  // restore the invariants before returning to the user,
-  // possibly using _recalculateWordsInUse().
-  // wordIndex is the index to be accommodated.
-  void _expandTo(int wordIndex) {
-    int wordsRequired = wordIndex + 1;
-    if (_wordsInUse < wordsRequired) {
-      _ensureCapacity(wordsRequired);
-      _wordsInUse = wordsRequired;
-    }
-  }
-
-  // Checks that fromIndex ... toIndex is a valid range of bit indices.
-  static void _checkRange(int fromIndex, int toIndex) {
-    if (fromIndex < 0) throw new RangeError("fromIndex < 0: $fromIndex");
-    if (toIndex < 0) throw new RangeError("toIndex < 0: $toIndex");
-    if (fromIndex > toIndex)
-      throw new RangeError("fromIndex: $fromIndex > toIndex: $toIndex");
-  }
-
-  static int _bitCount(Int64 i) {
-    Int64 mask = Int64.parseHex("FFFFFFFFFFFFFFFF");
-    Int64 mask1 = Int64.parseHex("3333333333333333");
-    i = i - (((i & mask) >> 1) & Int64.parseHex("5555555555555555"));
-    i = (i & mask1) + (((i & mask) >> 2) & mask1);
-    i = (i + ((i & mask) >> 4)) & Int64.parseHex("0f0f0f0f0f0f0f0f");
-    i = i + ((i & mask) >> 8);
-    i = i + ((i & mask) >> 16);
-    i = i + ((i & mask) >> 32);
-    return (i & 0x7f).toInt();
   }
 }

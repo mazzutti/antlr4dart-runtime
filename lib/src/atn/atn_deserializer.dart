@@ -385,8 +385,8 @@ class AtnDeserializer {
   }
 
   static String _toUuid(List<int> data) {
-    int leastSigBits = _toInt(data);
-    int mostSigBits = _toInt(data, 4);
+    BigInteger leastSigBits = _toInt(data);
+    BigInteger mostSigBits = _toInt(data, 4);
     String uuid = "${_digits(mostSigBits >> 32, 8)}-"
                   "${_digits(mostSigBits >> 16, 4)}-"
                   "${_digits(mostSigBits, 4)}-"
@@ -471,15 +471,17 @@ class AtnDeserializer {
     }
   }
 
-  static int _toInt(List<int> data, [int offset = 0]) {
-    int lowOrder = (data[offset]
-      | (data[offset + 1] << 16)) & 0x00000000FFFFFFFF;
-    return lowOrder | ((data[offset + 2] | (data[offset + 3] << 16)) << 32);
+  static BigInteger _toInt(List<int> data, [int offset = 0]) {
+    var mask = new BigInteger()..fromString('00000000FFFFFFFF', 16);
+    var lowOrder = new BigInteger(data[offset] | (data[offset + 1] << 16)) & mask;
+    var highOrder = new BigInteger(data[offset + 2] | data[offset + 3] << 16) << 32;
+    return lowOrder | highOrder;
   }
 
-  static String _digits(int paramLong, int paramInt) {
-    int l = 1 << paramInt * 4;
-    return (l | paramLong & l - 1).toRadixString(16).substring(1);
+  static String _digits(BigInteger paramLong, int paramInt) {
+    var left = new BigInteger(1 << paramInt * 4);
+    String hex = ((left | paramLong & left - BigInteger.ONE)).toString(16);
+    return hex.substring(hex.length - paramInt);
   }
 
   // Determines if a particular serialized representation of an ATN supports

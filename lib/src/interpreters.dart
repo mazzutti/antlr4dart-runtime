@@ -60,7 +60,7 @@ class ParserInterpreter extends Parser {
                     Atn atn,
                     TokenSource input)
       : decisionToDfa = new List<Dfa>(atn.numberOfDecisions),
-        pushRecursionContextStates = new BitSet(atn.states.length),
+        pushRecursionContextStates = new BitSet(),
         this.atn = atn,
         super(input) {
     for (int i = 0; i < decisionToDfa.length; i++) {

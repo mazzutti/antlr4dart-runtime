@@ -2,7 +2,7 @@ library antlr4dart;
 
 import 'dart:collection';
 import 'dart:math';
-import 'package:fixnum/fixnum.dart';
+import 'package:bignum/bignum.dart';
 import 'package:collection/equality.dart';
 
 part 'src/contexts.dart';
