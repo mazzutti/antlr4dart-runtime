@@ -49,7 +49,7 @@ class MurmurHash {
     hash = hash ^ ((hash & 0xFFFFFFFF) >> 13);
     hash = hash * 0xC2B2AE35;
     hash = hash ^ ((hash & 0xFFFFFFFF) >> 16);
-    return hash & 0xFFFFFFFFFFFFFF;
+    return hash & 0xFFFFFFFF;
   }
 
   /// Utility function to compute the hash code of an array using the
@@ -64,6 +64,6 @@ class MurmurHash {
     for (var value in data) {
       hash = update(hash, value.hashCode);
     }
-    return finish(hash, data.length) & 0xFFFFFFFFFFFFFF;
+    return finish(hash, data.length) & 0xFFFFFFFFF;
   }
 }

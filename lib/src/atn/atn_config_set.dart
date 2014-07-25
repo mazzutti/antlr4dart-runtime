@@ -69,13 +69,13 @@ class AtnConfigSet {
     if (_readonly) {
       if (_cachedHashCode == -1) {
         configs.forEach((c) => _cachedHashCode += _hashCode(c));
-        _cachedHashCode &= 0xFFFFFFFFFFFFFF;
+        _cachedHashCode &= 0xFFFFFFFF;
       }
       return _cachedHashCode;
     }
     int hash = -1;
     configs.forEach((c) => hash += _hashCode(c));
-    return hash & 0xFFFFFFFFFFFFFF;
+    return hash & 0xFFFFFFFF;
   }
 
   int get length => configs.length;

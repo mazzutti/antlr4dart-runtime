@@ -2,6 +2,10 @@ part of antlr4dart;
 
 abstract class Parser extends Recognizer<Token, ParserAtnSimulator> {
 
+  // To be used in shift left workaroud for dart2js
+  final BIG_ONE = BigInteger.ONE;
+  final BIG_ZERO = BigInteger.ZERO;
+
   // The input source.
   TokenSource _input;
 
