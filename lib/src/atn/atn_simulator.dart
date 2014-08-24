@@ -26,6 +26,18 @@ abstract class AtnSimulator {
         .getCachedContext(context, sharedContextCache, visited);
   }
 
+  /// Clear the DFA cache used by the current instance. Since the DFA cache may
+  /// be shared by multiple ATN simulators, this method may affect the
+  /// performance (but not accuracy) of other parsers which are being used
+  /// concurrently.
+  ///
+  /// An [UnsupportedError] occurs if the current instance does not support
+  /// clearing the DFA.
+  void clearDfa() {
+    throw new UnsupportedError(
+        "This ATN simulator does not support clearing the DFA.");
+  }
+
   static Atn deserialize(String data) => new AtnDeserializer().deserialize(data);
 }
 
@@ -190,7 +202,7 @@ class ParserAtnSimulator extends AtnSimulator {
     _outerContext = outerContext;
     Dfa dfa = decisionToDfa[decision];
     int m = tokenSource.mark;
-    int index = tokenSource.index;
+    int index = _startIndex;
     try {
       DfaState s0;
       if (dfa.isPrecedenceDfa) {
@@ -260,6 +272,12 @@ class ParserAtnSimulator extends AtnSimulator {
 
   String getLookaheadName(TokenSource tokenSource) {
     return getTokenName(tokenSource.lookAhead(1));
+  }
+
+  void clearDfa() {
+    for (int d = 0; d < decisionToDfa.length; d++) {
+      decisionToDfa[d] = new Dfa(atn.getDecisionState(d), d);
+    }
   }
 
   // Used for debugging in adaptivePredict around execAtn but I cut
@@ -1373,6 +1391,12 @@ class LexerAtnSimulator extends AtnSimulator {
   }
 
   Dfa getDfa(int mode) => decisionToDfa[mode];
+
+  void clearDfa() {
+    for (int d = 0; d < decisionToDfa.length; d++) {
+      decisionToDfa[d] = new Dfa(atn.getDecisionState(d), d);
+    }
+  }
 
   /// Get the text matched so far for the current token.
   String getText(StringSource input) {

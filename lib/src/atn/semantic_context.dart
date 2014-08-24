@@ -84,6 +84,15 @@ abstract class SemanticContext {
   }
 }
 
+/// This is the base class for semantic context "operators", which operate on
+/// a list of semantic context "operands".
+abstract class Operator extends SemanticContext {
+
+  /// The operands for the semantic context operator.
+  List<SemanticContext> get operands;
+}
+
+
 class Predicate extends SemanticContext {
   final int ruleIndex;
   final int predIndex;
@@ -117,7 +126,7 @@ class Predicate extends SemanticContext {
   String toString() => "{$ruleIndex:$predIndex}?";
 }
 
-class And extends SemanticContext {
+class And extends Operator {
 
   final List<SemanticContext> operands;
 
@@ -183,7 +192,7 @@ class And extends SemanticContext {
   String toString() => operands.join('&&');
 }
 
-class Or extends SemanticContext {
+class Or extends Operator {
 
   final List<SemanticContext> operands;
 
@@ -267,5 +276,5 @@ class PrecedencePredicate extends SemanticContext
     return other is PrecedencePredicate && precedence == other.precedence;
   }
 
-  String toString() => super.toString();
+  String toString() => "{$precedence >= prec}?";
 }

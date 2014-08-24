@@ -91,6 +91,16 @@ class AtnConfigSet {
     configLookup = null; // can't mod, no need for lookup cache
   }
 
+  /// Gets the complete set of represented alternatives for the
+  /// configuration set.
+  BitSet get alts {
+    BitSet alts = new BitSet();
+    for (AtnConfig config in configs) {
+      alts.set(config.alt, true);
+    }
+    return alts;
+  }
+
   AtnConfig operator[](int i) => configs[i];
 
   void optimizeConfigs(AtnSimulator interpreter) {

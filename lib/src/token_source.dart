@@ -302,6 +302,8 @@ class BufferedTokenSource implements TokenSource {
     if (tokenIndex < 0 || tokenIndex >= _tokens.length) {
       throw new RangeError("$tokenIndex not in 0..${_tokens.length - 1}");
     }
+    // obviously no tokens can appear before the first token
+    if (tokenIndex == 0) return null;
     int prevOnChannel = _previousTokenOnChannel(
         tokenIndex - 1, Token.DEFAULT_CHANNEL);
     if (prevOnChannel == tokenIndex - 1) return null;
@@ -379,11 +381,22 @@ class BufferedTokenSource implements TokenSource {
     return i;
   }
 
-  // Given a starting index, return the index of the previous token on channel.
-  // Return i if _tokens[i] is on channel. Return -1 if there are no tokens
-  // on channel between i and 0.
+  // Given a starting index, return the index of the previous token on
+  // channel. Return i if tokens[i] is on channel. Return -1 if there are
+  // no tokens on channel between i and 0.
+  //
+  // If i specifies an index at or after the EOF token, the EOF token
+  // index is returned. This is due to the fact that the EOF token is treated
+  // as though it were on every channel.
   int _previousTokenOnChannel(int i, int channel) {
-    while (i >= 0 && _tokens[i].channel != channel) i--;
+    _sync(i);
+    // the EOF token is on every channel
+    if (i >= length) return length - 1;
+    while (i >= 0) {
+      Token token = tokens[i];
+      if (token.type == Token.EOF || token.channel == channel) return i;
+      i--;
+    }
     return i;
   }
 
