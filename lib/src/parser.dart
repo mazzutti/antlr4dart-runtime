@@ -1,6 +1,26 @@
 part of antlr4dart;
 
 abstract class Parser extends Recognizer<Token, ParserAtnSimulator> {
+  
+  final StreamController<ParserSyntaxError> _syntaxErrorController =
+      new StreamController<ParserSyntaxError>.broadcast(sync: true);
+  @override
+  Stream<ParserSyntaxError> get onSyntaxError => _syntaxErrorController.stream;
+  
+  final StreamController<AmbiguityEvent> _ambiguityController =
+      new StreamController<AmbiguityEvent>.broadcast(sync: true);
+  
+  Stream<AmbiguityEvent> get onAmbiguity => _ambiguityController.stream;
+  
+  final StreamController<AttemptingFullContextEvent> _fullContextController =
+      new StreamController<AttemptingFullContextEvent>.broadcast(sync: true);
+  Stream<AttemptingFullContextEvent> get onAttemptingFullContext =>
+      _fullContextController.stream;
+  
+  final StreamController<ContextSensitivityEvent> _sensitivityController =
+      new StreamController<ContextSensitivityEvent>.broadcast(sync: true);
+  Stream<ContextSensitivityEvent> get onContextSensitivity =>
+      _sensitivityController.stream;
 
   // To be used in shift left workaroud for dart2js
   final BIG_ONE = BigInteger.ONE;
@@ -292,12 +312,8 @@ abstract class Parser extends Recognizer<Token, ParserAtnSimulator> {
                             RecognitionException e]) {
     offendingToken = (offendingToken != null) ? offendingToken: currentToken;
     _syntaxErrors++;
-    int line = -1;
-    int charPositionInLine = -1;
-    line = offendingToken.line;
-    charPositionInLine = offendingToken.charPositionInLine;
-    errorListenerDispatch.syntaxError(
-        this, offendingToken, line, charPositionInLine, msg, e);
+    _syntaxErrorController.add(new ParserSyntaxError(
+        this, offendingToken, msg, e));
   }
 
   /// Consume and return the [currentToken] current symbol.

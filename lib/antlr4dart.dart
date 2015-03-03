@@ -2,13 +2,14 @@ library antlr4dart;
 
 import 'dart:collection';
 import 'dart:math';
+import 'dart:async';
 import 'package:bignum/bignum.dart';
 import 'package:collection/equality.dart';
 
 part 'src/contexts.dart';
 part 'src/dfa.dart';
-part 'src/error_listener.dart';
 part 'src/error_strategy.dart';
+part 'src/events.dart';
 part 'src/exceptions.dart';
 part 'src/input_source.dart';
 part 'src/lexer.dart';
