@@ -12,6 +12,11 @@ abstract class Lexer extends Recognizer<int, LexerAtnSimulator>
   static const int SKIP = -3;
   static const int MIN_CHAR_VALUE = 0;
   static const int MAX_CHAR_VALUE = 65534;
+  
+  final StreamController<SyntaxError> _syntaxErrorController =
+    new StreamController<SyntaxError>.broadcast(sync: true);
+    
+  Stream<SyntaxError> get onSyntaxError => _syntaxErrorController.stream;
 
   // You can set the text for the current token to override what is in
   // the input char buffer.
@@ -265,13 +270,17 @@ abstract class Lexer extends Recognizer<int, LexerAtnSimulator>
   void notifyListeners(LexerNoViableAltException exception) {
     String text = _input.getText(Interval.of(tokenStartCharIndex, _input.index));
     String msg = "token recognition error at: '${getErrorDisplay(text)}'";
-    errorListenerDispatch.syntaxError(this, null,
-        tokenStartLine, tokenStartCharPositionInLine, msg, exception);
+    _syntaxErrorController.add(new SyntaxError(this, 
+        tokenStartLine, tokenStartCharPositionInLine, msg, exception));
   }
 
-  String getErrorDisplay(String s) => getScapedErrorDisplay(s);
+  String getErrorDisplay(String s) => getEscapedErrorDisplay(s);
 
-  String getScapedErrorDisplay(String s) {
+  ///Use correctly spelled function [getEscapedErrorDisplay] instead.
+  @deprecated
+  String getScapedErrorDisplay(String s) => getEscapedErrorDisplay(s);
+  
+  String getEscapedErrorDisplay(String s) {
     s = s.replaceAll('\n', '\\n');
     s = s.replaceAll('\t', '\\t');
     return s.replaceAll('\r', '\\r');

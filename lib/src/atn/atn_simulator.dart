@@ -1295,8 +1295,8 @@ class ParserAtnSimulator extends AtnSimulator {
                                     int startIndex,
                                     int stopIndex) {
     if (parser != null)
-      parser.errorListenerDispatch.reportAttemptingFullContext(
-          parser, dfa, startIndex, stopIndex, conflictingAlts, configs);
+      parser._fullContextController.add(new AttemptingFullContextEvent(
+          parser, dfa, startIndex, stopIndex, conflictingAlts, configs));
   }
 
   void _reportContextSensitivity(Dfa dfa,
@@ -1305,8 +1305,8 @@ class ParserAtnSimulator extends AtnSimulator {
                                  int startIndex,
                                  int stopIndex) {
     if (parser != null)
-      parser.errorListenerDispatch.reportContextSensitivity(
-          parser, dfa, startIndex, stopIndex, prediction, configs);
+      parser._sensitivityController.add(new ContextSensitivityEvent(
+          parser, dfa, startIndex, stopIndex, prediction, configs));
   }
 
   // If context sensitive parsing, we know it's ambiguity not conflict.
@@ -1318,8 +1318,8 @@ class ParserAtnSimulator extends AtnSimulator {
                         BitSet ambigAlts,
                         AtnConfigSet configs) {
     if (parser != null)
-      parser.errorListenerDispatch.reportAmbiguity(
-          parser, dfa, startIndex, stopIndex, exact, ambigAlts, configs);
+      parser._ambiguityController.add(new AmbiguityEvent(
+          parser, dfa, startIndex, stopIndex, exact, ambigAlts, configs));
   }
 }
 

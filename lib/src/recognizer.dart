@@ -1,8 +1,50 @@
 part of antlr4dart;
 
-abstract class Recognizer<T, AtnInterpreter extends AtnSimulator> {
-
-  List<ErrorListener> _listeners;
+/**
+ * Some breaking changes in version 0.7 - changed interface from using
+ * [ErrorListener]s to [Stream]s. Events can now be listened to with greater
+ * specificity, and more appropriately named. The following [Stream]s can now
+ * be listened to:
+ *   [Stream]<[SyntaxError]>[onSyntaxError],
+ *   [Stream]<[AmbiguityEvent]>[onAmbiguity],
+ *   [Stream]<[AttemptingFullContextEvent]>[onAttemptingFullContext], and
+ *   [Stream]<[ContextSensitivityEvent]>[onContextSensitivity].
+ *   
+ * 
+ * To fix broken code:
+ * 
+ * Old broken code:
+ *     recognizer.addErrorListener(errorListener);
+ *     // do stuff;
+ *     recognizer.removeErrorListener(errorListener);
+ * 
+ * Fix:
+ *     var subscription = recognizer.onSyntaxError.listen((e)
+ *         => doSomethingWith(e));
+ *     // do stuff;
+ *     subscription.cancel();
+ * 
+ * Note if errorListener in the above code block has non-trivial implementations
+ * of other functions e.g. reportContextSensitivity, these will have to be
+ * subscribed to separately.
+ * 
+ * Alternatively, you may extend Recognizer with [DeprecatedRecognizerMixin] 
+ * from antlr4dart._deprecation_fix.dart for an immediate fix. This isn't
+ * advised, as it uses deprecated features that will be removed in future, but
+ * may be a sufficient quick-fix for projects with a large code-base solution.
+ * 
+ * Also note as of version 0.7, syntaxerrors are no longer automatically
+ * [print]ed - you must subscribe if this is what you want:
+ *     recognizer.onSyntaxError.listen(print);
+ */
+abstract class Recognizer<T, AtnInterpreter extends AtnSimulator>{
+    
+  /**
+   * [ErrorStrategy] determines how errors are  handled - this is purely an
+   * informative [Stream]. Some or all errors may be successfully handled by
+   * the [ErrorStrategy] yet still be sent to this [Stream].
+   */
+  Stream<SyntaxError> get onSyntaxError;
 
   static final _tokenTypeMapCache = new HashMap();
   static final _ruleIndexMapCache = new HashMap();
@@ -14,12 +56,10 @@ abstract class Recognizer<T, AtnInterpreter extends AtnSimulator> {
   /// where we are in the ATN as the parser goes along. The rule context
   /// objects form a stack that lets us see the stack of invoking rules.
   /// Combine this and we have complete ATN configuration information.
-  int state = -1;
-
-  Recognizer() {
-    _listeners = new List<ErrorListener>();
-    _listeners.add(ConsoleErrorListener.INSTANCE);
-  }
+  int state = -1; 
+  
+  Recognizer();
+  
 
   /// Used to print out token names like ID during debugging and
   /// error reporting.  The generated parsers implement a method
@@ -41,12 +81,6 @@ abstract class Recognizer<T, AtnInterpreter extends AtnSimulator> {
   String get grammarFileName;
 
   Atn get atn;
-
-  List<ErrorListener> get errorListeners => _listeners;
-
-  ErrorListener get errorListenerDispatch {
-    return new ProxyErrorListener(errorListeners);
-  }
 
   /// Get a map from token names to token types.
   ///
@@ -128,20 +162,6 @@ abstract class Recognizer<T, AtnInterpreter extends AtnSimulator> {
   /// created the interpreter from it.
   String get serializedAtn {
     throw new UnsupportedError("there is no serialized ATN");
-  }
-
-  /// Throws [NullThrownError] if [listener] is `null`.
-  void addErrorListener(ErrorListener listener) {
-    if (listener == null) throw new NullThrownError();
-    _listeners.add(listener);
-  }
-
-  void removeErrorListener(ErrorListener listener) {
-    _listeners.remove(listener);
-  }
-
-  void removeErrorListeners() {
-    _listeners.clear();
   }
 
   /// Subclass needs to override these if there are sempreds or actions that

@@ -1,6 +1,11 @@
-part of antlr4dart;
+part of antlr4dart.deprecation_fix;
 
-/// How to emit recognition errors.
+/**
+ * How to emit recognition errors.
+ * 
+ * Use [Recognizer.onError].listen instead. See [Recognizer] documentation for
+ * details on removing deprecated code.
+ */  
 class ErrorListener {
   /// Upon syntax error, notify any interested parties. This is not how to
   /// recover from errors or compute error messages. [ErrorStrategy]
@@ -141,9 +146,9 @@ class ConsoleErrorListener extends ErrorListener {
   }
 }
 
-/// This implementation of [ErrorListener] dispatches all calls to a
-/// collection of delegate listeners. This reduces the effort required
-/// to support multiple listeners.
+//// This implementation of [ErrorListener] dispatches all calls to a
+//// collection of delegate listeners. This reduces the effort required
+//// to support multiple listeners.
 class ProxyErrorListener implements ErrorListener {
   final Iterable delegates;
 
@@ -217,4 +222,3 @@ class ProxyErrorListener implements ErrorListener {
     });
   }
 }
-
